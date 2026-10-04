@@ -6,6 +6,7 @@ type SetEntry = { kg: number; reps: number };
 type WorkoutItem = { exerciseName: string; sets: SetEntry[] };
 type Session = { date: string; items: WorkoutItem[] };
 type AppData = { favorites: string[]; customExercises: Exercise[]; sessions: Session[] };
+type BackupDocument = { format: "gym-notes-backup"; version: 1; exportedAt: string; data: AppData };
 type Page = "home" | "categories" | "exercises" | "workout" | "history" | "favorites";
 
 const categories: Category[] = [
@@ -93,7 +94,7 @@ function workoutPage(): string {
 function historyPage(): string {
   const sessions = [...data.sessions].reverse();
   const content = sessions.map(session => `<div class="card"><div class="historyrow"><h3>${safe(session.date)}</h3><span class="tag">${session.items.reduce((total, item) => total + item.sets.length, 0)} séries</span></div>${session.items.map(item => `<div class="historyrow"><div><b>${safe(item.exerciseName)}</b><div class="muted">${item.sets.map(set => `${format(set.kg)} kg / ${format(pounds(set.kg))} lb × ${set.reps}`).join(" · ")}</div></div></div>`).join("")}</div>`).join("");
-  return `${header("Historique", "Tes séances enregistrées")}${content || `<div class="empty">Aucune séance pour le moment. Enregistre ton premier entraînement pour voir ta progression ici.</div>`}`;
+  return `${header("Historique", "Tes séances enregistrées")}<div class="card backup-card"><h3>Garder une copie de tes données</h3><p class="muted">Enregistre un fichier sur ton téléphone pour pouvoir retrouver tes séances plus tard.</p><button class="button full" data-action="export-backup">⬇ &nbsp; Sauvegarder dans Fichiers</button><button class="button secondary full" data-action="choose-backup" style="margin-top:9px">↥ &nbsp; Restaurer depuis un fichier</button><input data-backup-file class="file-picker" type="file" accept=".json,application/json" aria-label="Choisir une sauvegarde GYM NOTES"></div>${content || `<div class="empty">Aucune séance pour le moment. Enregistre ton premier entraînement pour voir ta progression ici.</div>`}`;
 }
 function render(): void {
   document.querySelectorAll<HTMLButtonElement>(".tabs button").forEach(button => button.classList.toggle("active", button.dataset.page === (page === "exercises" ? "categories" : page)));
@@ -138,6 +139,55 @@ function saveWorkout(): void {
   session.items.push({ exerciseName: selectedExercise.name, sets });
   saveData(); showToast("Séance enregistrée ✓"); window.setTimeout(() => go("home"), 500);
 }
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+function isBackupDocument(value: unknown): value is BackupDocument {
+  if (!isRecord(value) || value.format !== "gym-notes-backup" || value.version !== 1 || typeof value.exportedAt !== "string" || !isRecord(value.data)) return false;
+  const backupData = value.data;
+  if (!Array.isArray(backupData.favorites) || !backupData.favorites.every(item => typeof item === "string")) return false;
+  if (!Array.isArray(backupData.customExercises) || !backupData.sessions || !Array.isArray(backupData.sessions)) return false;
+  const exercisesAreValid = backupData.customExercises.every((item: unknown) => isRecord(item)
+    && ["id", "name", "muscle", "categoryId", "icon"].every(key => typeof item[key] === "string"));
+  const sessionsAreValid = backupData.sessions.every((session: unknown) => isRecord(session)
+    && typeof session.date === "string" && Array.isArray(session.items)
+    && session.items.every((item: unknown) => isRecord(item) && typeof item.exerciseName === "string"
+      && Array.isArray(item.sets) && item.sets.every((set: unknown) => isRecord(set)
+        && typeof set.kg === "number" && Number.isFinite(set.kg) && typeof set.reps === "number" && Number.isFinite(set.reps))));
+  return exercisesAreValid && sessionsAreValid;
+}
+async function exportBackup(): Promise<void> {
+  const backup: BackupDocument = { format: "gym-notes-backup", version: 1, exportedAt: new Date().toISOString(), data };
+  const fileName = `gym-notes-sauvegarde-${new Date().toISOString().slice(0, 10)}.json`;
+  const file = new File([JSON.stringify(backup, null, 2)], fileName, { type: "application/json" });
+  try {
+    if (navigator.share && navigator.canShare?.({ files: [file] })) {
+      await navigator.share({ files: [file], title: "Sauvegarde GYM NOTES" });
+      showToast("Choisis « Enregistrer dans Fichiers »");
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    const link = document.createElement("a");
+    link.href = url; link.download = fileName; link.click();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    showToast("Fichier de sauvegarde téléchargé");
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") return;
+    showToast("Impossible de créer la sauvegarde");
+  }
+}
+async function restoreBackup(file: File | undefined): Promise<void> {
+  if (!file) return;
+  try {
+    const parsed: unknown = JSON.parse(await file.text());
+    if (!isBackupDocument(parsed)) throw new Error("invalid backup");
+    if (!window.confirm("Restaurer cette sauvegarde remplacera les données actuelles de GYM NOTES sur cet appareil. Continuer ?")) return;
+    data = parsed.data;
+    saveData(); showToast("Sauvegarde restaurée ✓"); render();
+  } catch {
+    showToast("Ce fichier n’est pas une sauvegarde GYM NOTES valide");
+  }
+}
 
 view.addEventListener("click", event => {
   const target = event.target;
@@ -152,10 +202,19 @@ view.addEventListener("click", event => {
   else if (action === "add-exercise") addCustomExercise();
   else if (action === "add-set") addSet();
   else if (action === "save-workout") saveWorkout();
+  else if (action === "export-backup") void exportBackup();
+  else if (action === "choose-backup") view.querySelector<HTMLInputElement>("[data-backup-file]")?.click();
   else if (favoriteId) toggleFavorite(favoriteId);
   else if (categoryId) { selectedCategoryId = categoryId; searchText = ""; go("exercises"); }
   else if (exerciseId) selectExercise(exerciseId);
   else if (nextPage) go(nextPage);
+});
+view.addEventListener("change", event => {
+  const target = event.target;
+  if (target instanceof HTMLInputElement && target.matches("[data-backup-file]")) {
+    void restoreBackup(target.files?.[0]);
+    target.value = "";
+  }
 });
 document.querySelectorAll<HTMLButtonElement>(".tabs button").forEach(button => button.addEventListener("click", () => go((button.dataset.page ?? "home") as Page)));
 view.addEventListener("input", event => {
