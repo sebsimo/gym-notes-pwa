@@ -1,0 +1,18 @@
+{
+  "id": "/",
+  "name": "GYM NOTES — Carnet d’entraînement",
+  "short_name": "GYM NOTES",
+  "description": "Un carnet simple pour noter tes exercices et tes séances de gym.",
+  "lang": "fr-CA",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#101614",
+  "theme_color": "#101614",
+  "categories": ["health", "fitness", "sports"],
+  "icons": [
+    { "src": "./icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "./icons/maskable.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}

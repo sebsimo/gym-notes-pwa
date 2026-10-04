@@ -1,0 +1,44 @@
+# GYM NOTES — TypeScript
+
+Application web mobile pour noter ses entraînements. Les séances et favoris sont sauvegardés localement dans le navigateur.
+
+## Ouvrir dans VS Code
+
+Dans VS Code, choisissez **Fichier → Ouvrir un dossier…** et sélectionnez le dossier `gym-notes-typescript`.
+
+## Lancer l’application
+
+Il faut installer Node.js (version LTS), puis ouvrir le terminal intégré de VS Code dans ce dossier et exécuter :
+
+```sh
+npm install
+npm run dev
+```
+
+Vite affichera une adresse locale à ouvrir dans le navigateur, généralement `http://localhost:5173`.
+
+Pour générer le site final :
+
+```sh
+npm run build
+```
+
+Les fichiers compilés seront placés dans `dist/`.
+
+## Installer comme application (PWA)
+
+Après `npm run build`, publie le contenu de `dist/` sur un hébergement HTTPS (par exemple GitHub Pages, Netlify ou Vercel). Les service workers et l’installation nécessitent HTTPS en ligne; en développement, `localhost` convient.
+
+Sur iPhone, ouvre le site dans Safari, touche **Partager**, puis **Sur l’écran d’accueil**. Sur Android/ordinateur, utilise **Installer l’application** ou **Ajouter à l’écran d’accueil** dans le menu du navigateur. Les données d’entraînement sont sauvegardées dans le navigateur de l’appareil.
+
+## Publier avec GitHub Pages
+
+Le projet contient un déploiement automatique. Après chaque envoi sur la branche `main`, GitHub compile le site et le publie.
+
+1. Dans GitHub Desktop, choisis **File → Add Local Repository…** puis sélectionne le dossier `gym-notes-typescript`. Si GitHub Desktop propose de créer un dépôt dans ce dossier, accepte.
+2. Clique sur **Publish repository** pour envoyer le projet sur ton compte GitHub.
+3. Sur GitHub, ouvre le dépôt, puis **Settings → Pages**. Dans **Build and deployment**, choisis **GitHub Actions** comme source.
+4. Dans l’onglet **Actions**, attends que le déploiement soit terminé. GitHub affichera l’adresse du site, normalement `https://TON-NOM.github.io/gym-notes-typescript/`.
+
+Tu peux choisir un nom de dépôt disponible; le projet utilise des chemins relatifs qui conviennent aux dépôts GitHub Pages. Après un changement de code, utilise GitHub Desktop pour faire un commit et **Push origin**; GitHub republiera la nouvelle version automatiquement. Une publication peut prendre quelques minutes.
+
