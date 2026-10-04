@@ -48,3 +48,5 @@ Tu peux choisir un nom de dépôt disponible; le projet utilise des chemins rela
 Dans l’application, ouvre **Historique**, puis touche **Sauvegarder dans Fichiers**. Sur iPhone, choisis **Enregistrer dans Fichiers** dans la feuille de partage et sélectionne un emplacement, par exemple **Sur mon iPhone → Téléchargements** ou iCloud Drive. Garde ce fichier JSON : il contient les séances, exercices personnels et favoris.
 
 Pour récupérer tes données plus tard, ouvre **Historique → Restaurer depuis un fichier**, sélectionne le fichier de sauvegarde et confirme. La restauration remplace les données présentes sur l’appareil par celles du fichier.
+
+Le catalogue reprend les noms des exercices affichés par [Espace Musculation](https://www.espace-musculation.com/exercices). Leur classement par équipement dans l’application est indicatif.

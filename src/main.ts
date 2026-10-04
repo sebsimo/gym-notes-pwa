@@ -26,6 +26,74 @@ const exercises: Exercise[] = [
   ["Développé épaules", "Épaules", "machine", "🙌"], ["Goblet squat", "Jambes", "kettlebell", "🔔"],
 ].map(([name, muscle, categoryId, icon], index) => ({ id: `builtin-${index}`, name: name!, muscle: muscle!, categoryId: categoryId!, icon: icon! }));
 
+// Noms de la banque Espace Musculation; le matériel est classé pour les filtres de GYM NOTES.
+const sourceExercises: Exercise[] = [
+  ["Développé couché", "Pectoraux", "barbell", "🛏️"],
+  ["Développé incliné", "Pectoraux", "barbell", "🏋️"],
+  ["Développé décliné", "Pectoraux", "barbell", "🏋️"],
+  ["Écartés haltères", "Pectoraux", "dumbbells", "🏋️"],
+  ["Écartés poulies", "Pectoraux", "cables", "🔗"],
+  ["Pec-deck", "Pectoraux", "machine", "⚙️"],
+  ["Pompes", "Pectoraux", "bodyweight", "🤸"],
+  ["Traction", "Dos & trapèzes", "bodyweight", "🤸"],
+  ["Rowing barre", "Dos & trapèzes", "barbell", "🏋️"],
+  ["Soulevé de terre", "Dos & trapèzes", "barbell", "🏋️"],
+  ["Shrug", "Dos & trapèzes", "dumbbells", "🏋️"],
+  ["Tirage vertical", "Dos & trapèzes", "cables", "🔗"],
+  ["Tirage horizontal", "Dos & trapèzes", "cables", "🔗"],
+  ["Extension lombaire", "Dos & trapèzes", "bodyweight", "🤸"],
+  ["Pullover", "Dos & trapèzes", "dumbbells", "🏋️"],
+  ["Shrug incliné haltères", "Dos & trapèzes", "dumbbells", "🏋️"],
+  ["Rowing barre T", "Dos & trapèzes", "barbell", "🏋️"],
+  ["Rowing haltère", "Dos & trapèzes", "dumbbells", "🏋️"],
+  ["Tirage horizontal haut", "Dos & trapèzes", "cables", "🔗"],
+  ["Rowing deux haltères", "Dos & trapèzes", "dumbbells", "🏋️"],
+  ["Extension lombaire couché", "Dos & trapèzes", "bodyweight", "🤸"],
+  ["Développé épaules", "Épaules", "dumbbells", "🏋️"],
+  ["Élévation latérale", "Épaules", "dumbbells", "🏋️"],
+  ["Élévation frontale", "Épaules", "dumbbells", "🏋️"],
+  ["Oiseau haltères", "Épaules", "dumbbells", "🏋️"],
+  ["Tirage menton", "Épaules", "barbell", "🏋️"],
+  ["Rowing assis", "Épaules", "machine", "⚙️"],
+  ["Oiseau à la poulie", "Épaules", "cables", "🔗"],
+  ["Élévation frontale inclinée", "Épaules", "dumbbells", "🏋️"],
+  ["Curl à la barre", "Biceps", "barbell", "🏋️"],
+  ["Curl haltères", "Biceps", "dumbbells", "🏋️"],
+  ["Curl poulie", "Biceps", "cables", "🔗"],
+  ["Dips", "Triceps", "bodyweight", "🤸"],
+  ["Kickback", "Triceps", "dumbbells", "🏋️"],
+  ["Développé à la barre", "Triceps", "barbell", "🏋️"],
+  ["Extension assis", "Triceps", "dumbbells", "🏋️"],
+  ["Extension couché", "Triceps", "barbell", "🏋️"],
+  ["Dips entre deux bancs", "Triceps", "bodyweight", "🤸"],
+  ["Extension à la poulie", "Triceps", "cables", "🔗"],
+  ["Flexion aux haltères", "Avant-bras", "dumbbells", "🏋️"],
+  ["Flexion barre pronation", "Avant-bras", "barbell", "🏋️"],
+  ["Flexion barre supination", "Avant-bras", "barbell", "🏋️"],
+  ["Squat", "Quadriceps", "barbell", "🏋️"],
+  ["Leg extension", "Quadriceps", "machine", "⚙️"],
+  ["Hack squat", "Quadriceps", "machine", "⚙️"],
+  ["Presse à cuisses", "Quadriceps", "machine", "⚙️"],
+  ["Squat barre guidée", "Quadriceps", "machine", "⚙️"],
+  ["Montée sur banc", "Quadriceps", "bodyweight", "🤸"],
+  ["Sissy squat", "Quadriceps", "bodyweight", "🤸"],
+  ["Soulevé de terre jambes tendues", "Ischio-jambiers & fessiers", "barbell", "🏋️"],
+  ["Leg curl debout", "Ischio-jambiers & fessiers", "machine", "⚙️"],
+  ["Good morning", "Ischio-jambiers & fessiers", "barbell", "🏋️"],
+  ["Leg curl assis", "Ischio-jambiers & fessiers", "machine", "⚙️"],
+  ["Fentes", "Ischio-jambiers & fessiers", "bodyweight", "🤸"],
+  ["Mollets à la presse", "Mollets", "machine", "⚙️"],
+  ["Élévation à 45°", "Mollets", "machine", "⚙️"],
+  ["Mollets assis", "Mollets", "machine", "⚙️"],
+  ["Mollets debout", "Mollets", "bodyweight", "🤸"],
+  ["Crunch", "Abdominaux & gainage", "bodyweight", "🤸"],
+  ["Crunch à la poulie", "Abdominaux & gainage", "cables", "🔗"],
+  ["Gainage", "Abdominaux & gainage", "bodyweight", "🤸"],
+  ["Relevés de jambes", "Abdominaux & gainage", "bodyweight", "🤸"],
+  ["Flexions latérales", "Abdominaux & gainage", "dumbbells", "🏋️"],
+  ["Rotation avec bâton", "Abdominaux & gainage", "bodyweight", "🤸"],
+].map(([name, muscle, categoryId, icon], index) => ({ id: `catalog-${index}`, name: name!, muscle: muscle!, categoryId: categoryId!, icon: icon! }));
+
 const storageKey = "gym-notes-typescript";
 const defaultData: AppData = { favorites: [], customExercises: [], sessions: [] };
 function loadData(): AppData {
@@ -43,7 +111,11 @@ let searchText = "";
 let weightKg = 20;
 const view = document.querySelector<HTMLElement>("#view")!;
 const toastElement = document.querySelector<HTMLElement>("#toast")!;
-const allExercises = (): Exercise[] => [...exercises, ...data.customExercises];
+const allExercises = (): Exercise[] => {
+  const knownNames = new Set(exercises.map(exercise => exercise.name.toLocaleLowerCase("fr-CA")));
+  const additions = sourceExercises.filter(exercise => !knownNames.has(exercise.name.toLocaleLowerCase("fr-CA")));
+  return [...exercises, ...additions, ...data.customExercises];
+};
 const saveData = (): void => localStorage.setItem(storageKey, JSON.stringify(data));
 const format = (value: number): string => new Intl.NumberFormat("fr-CA", { maximumFractionDigits: 1 }).format(value);
 const pounds = (kg: number): number => kg * 2.20462262;
