@@ -159,10 +159,38 @@ function header(title: string, subtitle: string): string {
 function categoryCard(category: Category, filterType: FilterType = "equipment"): string {
   return `<button class="category" data-filter-id="${safe(category.id)}" data-filter-type="${filterType}"><span class="emoji">${category.icon}</span><b>${safe(category.name)}</b><small>${safe(category.description)}</small></button>`;
 }
+function exerciseSilhouette(exercise: Exercise): string {
+  const name = exercise.name.toLocaleLowerCase("fr-CA");
+  // Des poses dessinées en SVG, choisies selon le mouvement pour rester nettes sur téléphone.
+  let pose = "press";
+  if (/traction|tirage vertical/.test(name)) pose = "pullup";
+  else if (/rowing|tirage horizontal/.test(name)) pose = "row";
+  else if (/squat|fente|montée sur banc|hack|presse à jambes|presse à cuisses|leg extension|leg curl/.test(name)) pose = "legs";
+  else if (/soulevé de terre|good morning|extension lombaire/.test(name)) pose = "hinge";
+  else if (/crunch|gainage|relevés de jambes|flexions latérales|rotation/.test(name)) pose = "core";
+  else if (/curl|flexion aux haltères/.test(name)) pose = "curl";
+  else if (/élévation|oiseau|tirage menton/.test(name)) pose = "raise";
+  else if (/extension triceps|extension assis|extension couché|extension à la poulie|kickback|dips/.test(name)) pose = "triceps";
+  else if (/écartés|pec-deck|pompes/.test(name)) pose = "chest";
+
+  const poses: Record<string, string> = {
+    press: `<path d="M15 22h50"/><circle cx="40" cy="21" r="6"/><path d="M40 28v17m0-12-12-8m12 8 12-8M40 45 28 57m12-12 12 12M13 18v8m54-8v8"/><path d="M22 14h36"/>`,
+    chest: `<path d="M12 43h56"/><circle cx="28" cy="32" r="5"/><path d="M33 34h17m-9 0-12 11m21-11 12 11M38 34l-8-13m12 13 9-13"/><path d="M25 17h30"/>`,
+    pullup: `<path d="M14 11h52M21 11v48m38-48v48"/><circle cx="40" cy="23" r="5"/><path d="M40 29v15m0-12-11-9m11 9 11-9M40 44 31 57m9-13 9 13"/>`,
+    row: `<path d="M11 18h58"/><circle cx="37" cy="24" r="5"/><path d="m34 30-9 12 14 5m-14-5-12 12m26-7 12 10m-14-10 8-10 13-7m-13 7 10 5"/><path d="M13 49h13"/>`,
+    legs: `<circle cx="39" cy="14" r="5"/><path d="m38 20-5 15 12 8m-12-8-11 9m11-9 12-2m0 10-5 16m5-16 13 12M18 17h44"/>`,
+    hinge: `<circle cx="49" cy="19" r="5"/><path d="m45 24-15 12 13 8m-13-8-13 6m13-6-7 19m7-19 16 12 12 9m-12-9 7-11"/><path d="M12 54h56"/>`,
+    core: `<path d="M13 50h54"/><circle cx="28" cy="34" r="5"/><path d="m33 36 17 3 9 9m-25-12-10 12m26-9 5-13m-5 13-8 10"/>`,
+    curl: `<circle cx="37" cy="17" r="5"/><path d="M37 23v19m0-12-10 9m10-9 10-5m-10 17-11 14m11-14 11 14m-21-18 7-7m18-6-4-7"/><path d="M49 9v14m-4-11h8"/>`,
+    raise: `<circle cx="39" cy="17" r="5"/><path d="M39 23v21m0-15-18-8m18 8 18-8M39 44 27 58m12-14 12 14"/><path d="M15 17h8m34 0h8"/>`,
+    triceps: `<circle cx="39" cy="16" r="5"/><path d="M39 22v22m0-16-13 5 10 8m3-13 12 7m-12 7-12 14m12-14 12 14"/><path d="M51 14v13m-4-10h8"/>`,
+  };
+  return `<svg class="exercise-silhouette" viewBox="0 0 80 68" role="img" aria-label="Silhouette : ${safe(exercise.name)}" focusable="false">${poses[pose]}</svg>`;
+}
 function exerciseCard(exercise: Exercise): string {
   const favorite = data.favorites.includes(exercise.id);
   const category = categories.find(item => item.id === exercise.categoryId);
-  return `<div class="card row"><div class="thumb">${exercise.icon}</div><div class="grow" data-exercise="${exercise.id}" style="cursor:pointer"><h3>${safe(exercise.name)}</h3><span class="muted">${safe(muscleGroupFor(exercise))} · ${category?.name ?? "Autre"}</span></div><button class="textbutton" data-favorite="${exercise.id}" aria-label="Favori">${favorite ? "⭐" : "☆"}</button><button class="arrow" data-exercise="${exercise.id}" aria-label="Ouvrir">›</button></div>`;
+  return `<div class="card row"><div class="thumb">${exerciseSilhouette(exercise)}</div><div class="grow" data-exercise="${exercise.id}" style="cursor:pointer"><h3>${safe(exercise.name)}</h3><span class="muted">${safe(muscleGroupFor(exercise))} · ${category?.name ?? "Autre"}</span></div><button class="textbutton" data-favorite="${exercise.id}" aria-label="Favori">${favorite ? "⭐" : "☆"}</button><button class="arrow" data-exercise="${exercise.id}" aria-label="Ouvrir">›</button></div>`;
 }
 function home(): string {
   const last = data.sessions.at(-1);
@@ -189,7 +217,7 @@ function workoutPage(): string {
     const set = previous?.sets[index];
     return `<div class="setrow"><span class="setnum">${index + 1}</span><input data-set-kg type="number" step="0.1" inputmode="decimal" value="${set?.kg ?? weightKg}" aria-label="Poids en kg"><input data-set-reps type="number" inputmode="numeric" value="${set?.reps ?? 10}" aria-label="Répétitions"></div>`;
   }).join("");
-  return `${header(exercise.name, "Nouvelle séance")}<div class="card row"><div class="thumb">${exercise.icon}</div><div class="grow"><h3>${safe(exercise.name)}</h3><span class="muted">${previous ? "Dernière séance · valeurs préremplies" : "Ajoute tes séries ci-dessous"}</span></div><button class="textbutton" data-favorite="${exercise.id}">${data.favorites.includes(exercise.id) ? "⭐" : "☆"}</button></div><div class="card"><div class="sectionhead" style="margin-top:0"><h3>Poids de la série</h3><span class="tag">KG + LB</span></div><div class="units"><div class="unit"><span class="inputlabel">Kilogrammes</span><strong data-kg-out>${format(weightKg)} kg</strong></div><div class="unit"><span class="inputlabel">Livres</span><strong data-lb-out>${format(pounds(weightKg))} lb</strong></div></div><div class="units"><label><span class="inputlabel">Entrer kg</span><input data-weight-kg type="number" step="0.1" inputmode="decimal" value="${weightKg}"></label><label><span class="inputlabel">Ou entrer lb</span><input data-weight-lb type="number" step="0.1" inputmode="decimal" placeholder="${format(pounds(weightKg))}"></label></div></div><div class="card"><div class="sectionhead" style="margin-top:0"><h3>Séries</h3><button class="textbutton" data-action="add-set">＋ Ajouter une série</button></div><div data-sets>${rows}</div></div><button class="button full" data-action="save-workout">✓ &nbsp; Enregistrer la séance</button>`;
+  return `${header(exercise.name, "Nouvelle séance")}<div class="card row"><div class="thumb">${exerciseSilhouette(exercise)}</div><div class="grow"><h3>${safe(exercise.name)}</h3><span class="muted">${previous ? "Dernière séance · valeurs préremplies" : "Ajoute tes séries ci-dessous"}</span></div><button class="textbutton" data-favorite="${exercise.id}">${data.favorites.includes(exercise.id) ? "⭐" : "☆"}</button></div><div class="card"><div class="sectionhead" style="margin-top:0"><h3>Poids de la série</h3><span class="tag">KG + LB</span></div><div class="units"><div class="unit"><span class="inputlabel">Kilogrammes</span><strong data-kg-out>${format(weightKg)} kg</strong></div><div class="unit"><span class="inputlabel">Livres</span><strong data-lb-out>${format(pounds(weightKg))} lb</strong></div></div><div class="units"><label><span class="inputlabel">Entrer kg</span><input data-weight-kg type="number" step="0.1" inputmode="decimal" value="${weightKg}"></label><label><span class="inputlabel">Ou entrer lb</span><input data-weight-lb type="number" step="0.1" inputmode="decimal" placeholder="${format(pounds(weightKg))}"></label></div></div><div class="card"><div class="sectionhead" style="margin-top:0"><h3>Séries</h3><button class="textbutton" data-action="add-set">＋ Ajouter une série</button></div><div data-sets>${rows}</div></div><button class="button full" data-action="save-workout">✓ &nbsp; Enregistrer la séance</button>`;
 }
 function historyPage(): string {
   const sessions = [...data.sessions].reverse();
