@@ -50,3 +50,5 @@ Dans l’application, ouvre **Historique**, puis touche **Sauvegarder dans Fichi
 Pour récupérer tes données plus tard, ouvre **Historique → Restaurer depuis un fichier**, sélectionne le fichier de sauvegarde et confirme. La restauration remplace les données présentes sur l’appareil par celles du fichier.
 
 Le catalogue reprend les noms des exercices affichés par [Espace Musculation](https://www.espace-musculation.com/exercices). Leur classement par équipement dans l’application est indicatif.
+
+Le catalogue de GYM NOTES peut être parcouru par groupe musculaire ou par matériel.

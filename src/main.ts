@@ -8,6 +8,7 @@ type Session = { date: string; items: WorkoutItem[] };
 type AppData = { favorites: string[]; customExercises: Exercise[]; sessions: Session[] };
 type BackupDocument = { format: "gym-notes-backup"; version: 1; exportedAt: string; data: AppData };
 type Page = "home" | "categories" | "exercises" | "workout" | "history" | "favorites";
+type FilterType = "equipment" | "muscle";
 
 const categories: Category[] = [
   { id: "dumbbells", name: "Haltères", icon: "🏋️", description: "Poids libres" },
@@ -16,6 +17,18 @@ const categories: Category[] = [
   { id: "bodyweight", name: "Sans équipement", icon: "🤸", description: "Poids du corps" },
   { id: "cables", name: "Câbles", icon: "🔗", description: "Poulies et câbles" },
   { id: "kettlebell", name: "Kettlebell", icon: "🔔", description: "Poids russes" },
+];
+const muscleGroups: Category[] = [
+  { id: "Pectoraux", name: "Pectoraux", icon: "🫁", description: "Poitrine" },
+  { id: "Dos & trapèzes", name: "Dos & trapèzes", icon: "🧍", description: "Largeur et épaisseur" },
+  { id: "Épaules", name: "Épaules", icon: "🙌", description: "Deltoïdes" },
+  { id: "Biceps", name: "Biceps", icon: "💪", description: "Avant du bras" },
+  { id: "Triceps", name: "Triceps", icon: "💪", description: "Arrière du bras" },
+  { id: "Avant-bras", name: "Avant-bras", icon: "✊", description: "Poigne et poignets" },
+  { id: "Quadriceps", name: "Quadriceps", icon: "🦵", description: "Avant des cuisses" },
+  { id: "Ischio-jambiers & fessiers", name: "Ischio-jambiers & fessiers", icon: "🏃", description: "Arrière des jambes" },
+  { id: "Mollets", name: "Mollets", icon: "🦶", description: "Bas des jambes" },
+  { id: "Abdominaux & gainage", name: "Abdominaux & gainage", icon: "🧘", description: "Centre du corps" },
 ];
 const exercises: Exercise[] = [
   ["Développé couché", "Poitrine", "barbell", "🛏️"], ["Presse à jambes", "Jambes", "machine", "🦵"],
@@ -106,6 +119,8 @@ function loadData(): AppData {
 let data = loadData();
 let page: Page = "home";
 let selectedCategoryId = "";
+let selectedFilterType: FilterType = "muscle";
+let categoryMode: FilterType = "muscle";
 let selectedExercise: Exercise | undefined;
 let searchText = "";
 let weightKg = 20;
@@ -116,6 +131,16 @@ const allExercises = (): Exercise[] => {
   const additions = sourceExercises.filter(exercise => !knownNames.has(exercise.name.toLocaleLowerCase("fr-CA")));
   return [...exercises, ...additions, ...data.customExercises];
 };
+function muscleGroupFor(exercise: Exercise): string {
+  if (muscleGroups.some(group => group.id === exercise.muscle)) return exercise.muscle;
+  const oldGroup = exercise.muscle.toLocaleLowerCase("fr-CA");
+  if (oldGroup === "poitrine") return "Pectoraux";
+  if (oldGroup === "dos") return "Dos & trapèzes";
+  if (oldGroup === "épaules") return "Épaules";
+  if (oldGroup === "bras") return exercise.name.toLocaleLowerCase("fr-CA").includes("curl") ? "Biceps" : "Triceps";
+  if (oldGroup === "jambes") return /fente/i.test(exercise.name) ? "Ischio-jambiers & fessiers" : "Quadriceps";
+  return exercise.muscle;
+}
 const saveData = (): void => localStorage.setItem(storageKey, JSON.stringify(data));
 const format = (value: number): string => new Intl.NumberFormat("fr-CA", { maximumFractionDigits: 1 }).format(value);
 const pounds = (kg: number): number => kg * 2.20462262;
@@ -131,13 +156,13 @@ function back(): void { go(page === "workout" ? "exercises" : page === "exercise
 function header(title: string, subtitle: string): string {
   return `<div class="screenhead"><button class="back" data-action="back" aria-label="Retour">←</button><div><h1>${safe(title)}</h1><p>${safe(subtitle)}</p></div></div>`;
 }
-function categoryCard(category: Category): string {
-  return `<button class="category" data-category="${category.id}"><span class="emoji">${category.icon}</span><b>${safe(category.name)}</b><small>${safe(category.description)}</small></button>`;
+function categoryCard(category: Category, filterType: FilterType = "equipment"): string {
+  return `<button class="category" data-filter-id="${safe(category.id)}" data-filter-type="${filterType}"><span class="emoji">${category.icon}</span><b>${safe(category.name)}</b><small>${safe(category.description)}</small></button>`;
 }
 function exerciseCard(exercise: Exercise): string {
   const favorite = data.favorites.includes(exercise.id);
   const category = categories.find(item => item.id === exercise.categoryId);
-  return `<div class="card row"><div class="thumb">${exercise.icon}</div><div class="grow" data-exercise="${exercise.id}" style="cursor:pointer"><h3>${safe(exercise.name)}</h3><span class="muted">${safe(exercise.muscle)} · ${category?.name ?? "Autre"}</span></div><button class="textbutton" data-favorite="${exercise.id}" aria-label="Favori">${favorite ? "⭐" : "☆"}</button><button class="arrow" data-exercise="${exercise.id}" aria-label="Ouvrir">›</button></div>`;
+  return `<div class="card row"><div class="thumb">${exercise.icon}</div><div class="grow" data-exercise="${exercise.id}" style="cursor:pointer"><h3>${safe(exercise.name)}</h3><span class="muted">${safe(muscleGroupFor(exercise))} · ${category?.name ?? "Autre"}</span></div><button class="textbutton" data-favorite="${exercise.id}" aria-label="Favori">${favorite ? "⭐" : "☆"}</button><button class="arrow" data-exercise="${exercise.id}" aria-label="Ouvrir">›</button></div>`;
 }
 function home(): string {
   const last = data.sessions.at(-1);
@@ -145,12 +170,15 @@ function home(): string {
   return `<div class="eyebrow">${today}</div><h1 class="heading">Prêt à bouger ?</h1><p class="sub">Une série à la fois. Ta progression t’attend.</p><div class="hero"><div class="eyebrow">${last ? "DERNIÈRE SÉANCE" : "TA SÉANCE DU JOUR"}</div><h2>${last ? safe(last.date) : "On commence ?"}</h2><p>${last ? `${last.items.reduce((total, item) => total + item.sets.length, 0)} séries enregistrées` : "Choisis un exercice et note tes séries."}</p><button class="button" data-action="start">＋ &nbsp; Commencer une séance</button></div><div class="sectionhead"><h3>Catégories</h3><button class="textbutton" data-page="categories">Tout voir →</button></div><div class="grid">${categories.slice(0, 4).map(categoryCard).join("")}</div><div class="sectionhead"><h3>Raccourcis</h3></div><div class="card row" data-page="favorites" style="cursor:pointer"><div class="thumb">⭐</div><div class="grow"><h3>Mes favoris</h3><span class="muted">${data.favorites.length} exercice(s) enregistré(s)</span></div><span class="muted">→</span></div>`;
 }
 function categoriesPage(): string {
-  return `${header("Exercices", "Choisis une catégorie")}<input class="search" data-search placeholder="⌕  Rechercher un exercice" value="${safe(searchText)}"><div class="grid">${categories.map(categoryCard).join("")}</div><button class="button secondary full" data-action="add-exercise" style="margin-top:16px">＋ Créer un exercice</button>`;
+  const filters = categoryMode === "muscle" ? muscleGroups : categories;
+  const matchingExercises = searchText ? allExercises().filter(item => item.name.toLocaleLowerCase("fr-CA").includes(searchText.toLocaleLowerCase("fr-CA"))) : [];
+  const cards = searchText ? matchingExercises.map(exerciseCard).join("") || `<div class="empty">Aucun exercice trouvé.</div>` : `<div class="grid">${filters.map(category => categoryCard(category, categoryMode)).join("")}</div>`;
+  return `${header("Exercices", "Trouve par muscle ou par matériel")}<div class="filter-switch"><button data-filter-mode="muscle" class="${categoryMode === "muscle" ? "selected" : ""}">Groupe musculaire</button><button data-filter-mode="equipment" class="${categoryMode === "equipment" ? "selected" : ""}">Matériel</button></div><input class="search" data-search placeholder="⌕  Rechercher un exercice" value="${safe(searchText)}">${cards}<button class="button secondary full" data-action="add-exercise" style="margin-top:16px">＋ Créer un exercice</button>`;
 }
 function exerciseList(): string {
-  const category = categories.find(item => item.id === selectedCategoryId);
-  const list = allExercises().filter(item => item.categoryId === selectedCategoryId && item.name.toLocaleLowerCase().includes(searchText.toLocaleLowerCase()));
-  return `${header(category?.name ?? "Exercices", "Choisis ton exercice")}<input class="search" data-search placeholder="⌕  Rechercher" value="${safe(searchText)}"><div class="sectionhead"><h3>Exercices</h3><button class="textbutton" data-action="add-exercise">＋ Ajouter</button></div>${list.map(exerciseCard).join("") || `<div class="empty">Aucun exercice trouvé.</div>`}`;
+  const filter = (selectedFilterType === "muscle" ? muscleGroups : categories).find(item => item.id === selectedCategoryId);
+  const list = allExercises().filter(item => (selectedFilterType === "muscle" ? muscleGroupFor(item) === selectedCategoryId : item.categoryId === selectedCategoryId) && item.name.toLocaleLowerCase("fr-CA").includes(searchText.toLocaleLowerCase("fr-CA")));
+  return `${header(filter?.name ?? "Exercices", selectedFilterType === "muscle" ? "Exercices pour ce groupe musculaire" : "Exercices avec ce matériel")}<input class="search" data-search placeholder="⌕  Rechercher" value="${safe(searchText)}"><div class="sectionhead"><h3>Exercices</h3><button class="textbutton" data-action="add-exercise">＋ Ajouter</button></div>${list.map(exerciseCard).join("") || `<div class="empty">Aucun exercice trouvé.</div>`}`;
 }
 function workoutPage(): string {
   const exercise = selectedExercise;
@@ -190,8 +218,9 @@ function selectExercise(id: string): void {
 function addCustomExercise(): void {
   const name = window.prompt("Nom de l’exercice :")?.trim();
   if (!name) return;
-  const muscle = window.prompt("Groupe musculaire :", "Autre")?.trim() || "Autre";
-  const categoryId = page === "exercises" ? selectedCategoryId : "bodyweight";
+  const defaultMuscle = page === "exercises" && selectedFilterType === "muscle" ? selectedCategoryId : "Autre";
+  const muscle = window.prompt("Groupe musculaire :", defaultMuscle)?.trim() || defaultMuscle;
+  const categoryId = page === "exercises" && selectedFilterType === "equipment" ? selectedCategoryId : "bodyweight";
   data.customExercises.push({ id: `custom-${Date.now()}`, name, muscle, categoryId, icon: categories.find(item => item.id === categoryId)?.icon ?? "🏋️" });
   saveData(); showToast("Exercice ajouté"); render();
 }
@@ -265,7 +294,9 @@ view.addEventListener("click", event => {
   const target = event.target;
   if (!(target instanceof Element)) return;
   const action = target.closest<HTMLElement>("[data-action]")?.dataset.action;
-  const categoryId = target.closest<HTMLElement>("[data-category]")?.dataset.category;
+  const filterId = target.closest<HTMLElement>("[data-filter-id]")?.dataset.filterId;
+  const filterType = target.closest<HTMLElement>("[data-filter-id]")?.dataset.filterType as FilterType | undefined;
+  const filterMode = target.closest<HTMLElement>("[data-filter-mode]")?.dataset.filterMode as FilterType | undefined;
   const exerciseId = target.closest<HTMLElement>("[data-exercise]")?.dataset.exercise;
   const favoriteId = target.closest<HTMLElement>("[data-favorite]")?.dataset.favorite;
   const nextPage = target.closest<HTMLElement>("[data-page]")?.dataset.page as Page | undefined;
@@ -276,8 +307,9 @@ view.addEventListener("click", event => {
   else if (action === "save-workout") saveWorkout();
   else if (action === "export-backup") void exportBackup();
   else if (action === "choose-backup") view.querySelector<HTMLInputElement>("[data-backup-file]")?.click();
+  else if (filterMode) { categoryMode = filterMode; searchText = ""; render(); }
   else if (favoriteId) toggleFavorite(favoriteId);
-  else if (categoryId) { selectedCategoryId = categoryId; searchText = ""; go("exercises"); }
+  else if (filterId && filterType) { selectedCategoryId = filterId; selectedFilterType = filterType; searchText = ""; go("exercises"); }
   else if (exerciseId) selectExercise(exerciseId);
   else if (nextPage) go(nextPage);
 });
