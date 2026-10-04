@@ -121,6 +121,7 @@ let page: Page = "home";
 let selectedCategoryId = "";
 let selectedFilterType: FilterType = "muscle";
 let categoryMode: FilterType = "muscle";
+let selectedEquipmentId = "";
 let selectedExercise: Exercise | undefined;
 let searchText = "";
 let weightKg = 20;
@@ -195,7 +196,7 @@ function exerciseCard(exercise: Exercise): string {
 function home(): string {
   const last = data.sessions.at(-1);
   const today = new Intl.DateTimeFormat("fr-CA", { weekday: "long", day: "numeric", month: "long" }).format(new Date()).toUpperCase();
-  return `<div class="eyebrow">${today}</div><h1 class="heading">Prêt à bouger ?</h1><p class="sub">Une série à la fois. Ta progression t’attend.</p><div class="hero"><div class="eyebrow">${last ? "DERNIÈRE SÉANCE" : "TA SÉANCE DU JOUR"}</div><h2>${last ? safe(last.date) : "On commence ?"}</h2><p>${last ? `${last.items.reduce((total, item) => total + item.sets.length, 0)} séries enregistrées` : "Choisis un exercice et note tes séries."}</p><button class="button" data-action="start">＋ &nbsp; Commencer une séance</button></div><div class="sectionhead"><h3>Catégories</h3><button class="textbutton" data-page="categories">Tout voir →</button></div><div class="grid">${categories.slice(0, 4).map(category => categoryCard(category)).join("")}</div><div class="sectionhead"><h3>Raccourcis</h3></div><div class="card row" data-page="favorites" style="cursor:pointer"><div class="thumb">⭐</div><div class="grow"><h3>Mes favoris</h3><span class="muted">${data.favorites.length} exercice(s) enregistré(s)</span></div><span class="muted">→</span></div>`;
+  return `<div class="eyebrow">${today}</div><h1 class="heading">Prêt à bouger ?</h1><p class="sub">Une série à la fois. Ta progression t’attend.</p><div class="hero"><div class="eyebrow">${last ? "DERNIÈRE SÉANCE" : "TA SÉANCE DU JOUR"}</div><h2>${last ? safe(last.date) : "On commence ?"}</h2><p>${last ? `${last.items.reduce((total, item) => total + item.sets.length, 0)} séries enregistrées` : "Choisis un exercice et note tes séries."}</p><button class="button" data-action="start">＋ &nbsp; Commencer une séance</button></div><div class="sectionhead"><h3>Parties du corps</h3><button class="textbutton" data-page="categories">Tout voir →</button></div><div class="grid">${muscleGroups.slice(0, 4).map(group => categoryCard(group, "muscle")).join("")}</div><div class="sectionhead"><h3>Raccourcis</h3></div><div class="card row" data-page="favorites" style="cursor:pointer"><div class="thumb">⭐</div><div class="grow"><h3>Mes favoris</h3><span class="muted">${data.favorites.length} exercice(s) enregistré(s)</span></div><span class="muted">→</span></div>`;
 }
 function categoriesPage(): string {
   const filters = categoryMode === "muscle" ? muscleGroups : categories;
@@ -205,8 +206,9 @@ function categoriesPage(): string {
 }
 function exerciseList(): string {
   const filter = (selectedFilterType === "muscle" ? muscleGroups : categories).find(item => item.id === selectedCategoryId);
-  const list = allExercises().filter(item => (selectedFilterType === "muscle" ? muscleGroupFor(item) === selectedCategoryId : item.categoryId === selectedCategoryId) && item.name.toLocaleLowerCase("fr-CA").includes(searchText.toLocaleLowerCase("fr-CA")));
-  return `${header(filter?.name ?? "Exercices", selectedFilterType === "muscle" ? "Exercices pour ce groupe musculaire" : "Exercices avec ce matériel")}<input class="search" data-search placeholder="⌕  Rechercher" value="${safe(searchText)}"><div class="sectionhead"><h3>Exercices</h3><button class="textbutton" data-action="add-exercise">＋ Ajouter</button></div>${list.map(exerciseCard).join("") || `<div class="empty">Aucun exercice trouvé.</div>`}`;
+  const list = allExercises().filter(item => (selectedFilterType === "muscle" ? muscleGroupFor(item) === selectedCategoryId && (!selectedEquipmentId || item.categoryId === selectedEquipmentId) : item.categoryId === selectedCategoryId) && item.name.toLocaleLowerCase("fr-CA").includes(searchText.toLocaleLowerCase("fr-CA")));
+  const equipmentFilters = selectedFilterType === "muscle" ? `<div class="equipment-filters" aria-label="Filtrer par matériel"><button data-equipment-filter="" class="${selectedEquipmentId === "" ? "selected" : ""}">Tout</button>${categories.filter(item => ["dumbbells", "barbell", "machine", "bodyweight"].includes(item.id)).map(item => `<button data-equipment-filter="${item.id}" class="${selectedEquipmentId === item.id ? "selected" : ""}">${safe(item.name)}</button>`).join("")}</div>` : "";
+  return `${header(filter?.name ?? "Exercices", selectedFilterType === "muscle" ? "Choisis le matériel, puis ton exercice" : "Exercices avec ce matériel")}<input class="search" data-search placeholder="⌕  Rechercher" value="${safe(searchText)}">${equipmentFilters}<div class="sectionhead"><h3>Exercices</h3><button class="textbutton" data-action="add-exercise">＋ Ajouter</button></div>${list.map(exerciseCard).join("") || `<div class="empty">Aucun exercice trouvé avec ce matériel.</div>`}`;
 }
 function workoutPage(): string {
   const exercise = selectedExercise;
@@ -327,6 +329,7 @@ view.addEventListener("click", event => {
   const filterMode = target.closest<HTMLElement>("[data-filter-mode]")?.dataset.filterMode as FilterType | undefined;
   const exerciseId = target.closest<HTMLElement>("[data-exercise]")?.dataset.exercise;
   const favoriteId = target.closest<HTMLElement>("[data-favorite]")?.dataset.favorite;
+  const equipmentFilter = target.closest<HTMLElement>("[data-equipment-filter]")?.dataset.equipmentFilter;
   const nextPage = target.closest<HTMLElement>("[data-page]")?.dataset.page as Page | undefined;
   if (action === "back") back();
   else if (action === "start") go("categories");
@@ -336,8 +339,9 @@ view.addEventListener("click", event => {
   else if (action === "export-backup") void exportBackup();
   else if (action === "choose-backup") view.querySelector<HTMLInputElement>("[data-backup-file]")?.click();
   else if (filterMode) { categoryMode = filterMode; searchText = ""; render(); }
+  else if (equipmentFilter !== undefined) { selectedEquipmentId = equipmentFilter; render(); }
   else if (favoriteId) toggleFavorite(favoriteId);
-  else if (filterId && filterType) { selectedCategoryId = filterId; selectedFilterType = filterType; searchText = ""; go("exercises"); }
+  else if (filterId && filterType) { selectedCategoryId = filterId; selectedFilterType = filterType; selectedEquipmentId = ""; searchText = ""; go("exercises"); }
   else if (exerciseId) selectExercise(exerciseId);
   else if (nextPage) go(nextPage);
 });
