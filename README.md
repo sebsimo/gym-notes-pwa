@@ -56,3 +56,7 @@ Le catalogue de GYM NOTES peut être parcouru par groupe musculaire ou par maté
 ## Illustrations des exercices
 
 Les illustrations apparaissent dans la liste et en trois étapes sur la fiche des exercices pris en charge. Les autres exercices conservent leur silhouette. Les illustrations sont de Bryl Lim / Everkinetic sous licence CC BY-SA 4.0; voir `public/exercises/ATTRIBUTION.md` et `public/exercises/LICENSE-ASSETS`.
+
+## Icônes anatomiques des catégories
+
+Les catégories musculaires utilisent des silhouettes de face ou de dos avec les muscles ciblés en rouge. Les SVG sont enregistrés localement et ajoutés au cache hors ligne. Leur attribution et leur licence sont indiquées dans `public/muscles/ATTRIBUTION.md`.

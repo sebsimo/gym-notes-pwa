@@ -30,6 +30,18 @@ const muscleGroups: Category[] = [
   { id: "Mollets", name: "Mollets", icon: "🦶", description: "Bas des jambes" },
   { id: "Abdominaux & gainage", name: "Abdominaux & gainage", icon: "🧘", description: "Centre du corps" },
 ];
+const muscleIllustrations: Record<string, string> = {
+  "Pectoraux": "pectoraux.svg",
+  "Dos & trapèzes": "dos-trapezes.svg",
+  "Épaules": "epaules.svg",
+  "Biceps": "biceps.svg",
+  "Triceps": "triceps.svg",
+  "Avant-bras": "avant-bras.svg",
+  "Quadriceps": "quadriceps.svg",
+  "Ischio-jambiers & fessiers": "ischio-fessiers.svg",
+  "Mollets": "mollets.svg",
+  "Abdominaux & gainage": "abdominaux.svg",
+};
 const exercises: Exercise[] = [
   ["Développé couché", "Poitrine", "barbell", "🛏️"], ["Presse à jambes", "Jambes", "machine", "🦵"],
   ["Tirage vertical", "Dos", "cables", "↘️"], ["Curl biceps", "Bras", "dumbbells", "💪"],
@@ -194,7 +206,11 @@ function header(title: string, subtitle: string): string {
   return `<div class="screenhead"><button class="back" data-action="back" aria-label="Retour">←</button><div><h1>${safe(title)}</h1><p>${safe(subtitle)}</p></div></div>`;
 }
 function categoryCard(category: Category, filterType: FilterType = "equipment"): string {
-  return `<button class="category" data-filter-id="${safe(category.id)}" data-filter-type="${filterType}"><span class="emoji">${category.icon}</span><b>${safe(category.name)}</b><small>${safe(category.description)}</small></button>`;
+  const illustration = filterType === "muscle" ? muscleIllustrations[category.id] : undefined;
+  const visual = illustration
+    ? `<span class="category-art"><img src="${import.meta.env.BASE_URL}muscles/${illustration}" alt="" loading="lazy"></span>`
+    : `<span class="emoji">${category.icon}</span>`;
+  return `<button class="category${illustration ? " category-with-art" : ""}" data-filter-id="${safe(category.id)}" data-filter-type="${filterType}">${visual}<b>${safe(category.name)}</b><small>${safe(category.description)}</small></button>`;
 }
 function exerciseSilhouette(exercise: Exercise): string {
   const name = exercise.name.toLocaleLowerCase("fr-CA");
