@@ -132,6 +132,42 @@ const allExercises = (): Exercise[] => {
   const additions = sourceExercises.filter(exercise => !knownNames.has(exercise.name.toLocaleLowerCase("fr-CA")));
   return [...exercises, ...additions, ...data.customExercises];
 };
+const exerciseIllustrationSlugs: Record<string, string> = {
+  "developpe couche": "bench-press", "presse a jambes": "leg-press", "tirage vertical": "lat-pulldown",
+  "curl biceps": "bicep-curl", "elevations laterales": "lateral-raise", squat: "squat", pompes: "push-up",
+  "souleve de terre": "deadlift", "extension triceps": "tricep-pushdown", fentes: "walking-lunge",
+  "developpe epaules": "overhead-press", "goblet squat": "goblet-squat", "developpe incline": "incline-bench-press",
+  "developpe decline": "decline-bench-press", "ecartes halteres": "dumbbell-fly", "ecartes poulies": "cable-fly",
+  "pec-deck": "pec-deck", traction: "pull-up", "rowing barre": "barbell-row", shrug: "dumbbell-shrug",
+  "tirage horizontal": "seated-row", "extension lombaire": "back-extension", "shrug incline halteres": "dumbbell-shrug",
+  "rowing barre t": "t-bar-row", "rowing haltere": "one-arm-dumbbell-row", "tirage horizontal haut": "seated-row",
+  "rowing deux halteres": "dumbbell-bent-over-row", "extension lombaire couche": "reverse-hyperextension",
+  "elevation laterale": "lateral-raise", "elevation frontale": "front-raise", "oiseau halteres": "rear-delt-fly",
+  "tirage menton": "upright-row", "rowing assis": "seated-row", "oiseau a la poulie": "cable-rear-delt-fly",
+  "elevation frontale inclinee": "front-raise", "curl a la barre": "bicep-curl", "curl halteres": "bicep-curl",
+  "curl poulie": "cable-curl", dips: "dip", kickback: "tricep-kickback", "developpe a la barre": "close-grip-bench-press",
+  "extension assis": "dumbbell-overhead-tricep-extension", "dips entre deux bancs": "bench-dip",
+  "extension a la poulie": "tricep-pushdown", "flexion aux halteres": "wrist-curl", "flexion barre pronation": "reverse-curl",
+  "flexion barre supination": "bicep-curl", "leg extension": "leg-extension", "hack squat": "hack-squat",
+  "presse a cuisses": "leg-press", "squat barre guidee": "smith-machine-squat", "montee sur banc": "step-up",
+  "sissy squat": "sissy-squat", "souleve de terre jambes tendues": "romanian-deadlift", "leg curl debout": "leg-curl",
+  "good morning": "good-morning", "leg curl assis": "seated-leg-curl", "mollets a la presse": "leg-press-calf-raise",
+  "elevation a 45": "standing-calf-raise", "mollets assis": "seated-calf-raise", "mollets debout": "standing-calf-raise",
+  crunch: "crunch", "crunch a la poulie": "cable-crunch", gainage: "plank", "releves de jambes": "lying-leg-raise",
+  "flexions laterales": "dumbbell-side-bend", "rotation avec baton": "russian-twist",
+};
+function illustrationSlug(exercise: Exercise): string | undefined {
+  const name = exercise.name.toLocaleLowerCase("fr-CA").normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  return exerciseIllustrationSlugs[name];
+}
+function exerciseArtwork(exercise: Exercise, frame: number): string | undefined {
+  const slug = illustrationSlug(exercise);
+  return slug ? `${import.meta.env.BASE_URL}exercises/${slug}/frame-${frame}.png` : undefined;
+}
+function exerciseThumbnail(exercise: Exercise): string {
+  const image = exerciseArtwork(exercise, 1);
+  return image ? `<img class="exercise-thumb" src="${image}" alt="Illustration de ${safe(exercise.name)}" loading="lazy">` : exerciseSilhouette(exercise);
+}
 function muscleGroupFor(exercise: Exercise): string {
   if (muscleGroups.some(group => group.id === exercise.muscle)) return exercise.muscle;
   const oldGroup = exercise.muscle.toLocaleLowerCase("fr-CA");
@@ -191,7 +227,7 @@ function exerciseSilhouette(exercise: Exercise): string {
 function exerciseCard(exercise: Exercise): string {
   const favorite = data.favorites.includes(exercise.id);
   const category = categories.find(item => item.id === exercise.categoryId);
-  return `<div class="card row"><div class="thumb">${exerciseSilhouette(exercise)}</div><div class="grow" data-exercise="${exercise.id}" style="cursor:pointer"><h3>${safe(exercise.name)}</h3><span class="muted">${safe(muscleGroupFor(exercise))} · ${category?.name ?? "Autre"}</span></div><button class="textbutton" data-favorite="${exercise.id}" aria-label="Favori">${favorite ? "⭐" : "☆"}</button><button class="arrow" data-exercise="${exercise.id}" aria-label="Ouvrir">›</button></div>`;
+  return `<div class="card row"><div class="thumb">${exerciseThumbnail(exercise)}</div><div class="grow" data-exercise="${exercise.id}" style="cursor:pointer"><h3>${safe(exercise.name)}</h3><span class="muted">${safe(muscleGroupFor(exercise))} · ${category?.name ?? "Autre"}</span></div><button class="textbutton" data-favorite="${exercise.id}" aria-label="Favori">${favorite ? "⭐" : "☆"}</button><button class="arrow" data-exercise="${exercise.id}" aria-label="Ouvrir">›</button></div>`;
 }
 function home(): string {
   const last = data.sessions.at(-1);
@@ -219,7 +255,15 @@ function workoutPage(): string {
     const set = previous?.sets[index];
     return `<div class="setrow"><span class="setnum">${index + 1}</span><input data-set-kg type="number" step="0.1" inputmode="decimal" value="${set?.kg ?? weightKg}" aria-label="Poids en kg"><input data-set-reps type="number" inputmode="numeric" value="${set?.reps ?? 10}" aria-label="Répétitions"></div>`;
   }).join("");
-  return `${header(exercise.name, "Nouvelle séance")}<div class="card row"><div class="thumb">${exerciseSilhouette(exercise)}</div><div class="grow"><h3>${safe(exercise.name)}</h3><span class="muted">${previous ? "Dernière séance · valeurs préremplies" : "Ajoute tes séries ci-dessous"}</span></div><button class="textbutton" data-favorite="${exercise.id}">${data.favorites.includes(exercise.id) ? "⭐" : "☆"}</button></div><div class="card"><div class="sectionhead" style="margin-top:0"><h3>Poids de la série</h3><span class="tag">KG + LB</span></div><div class="units"><div class="unit"><span class="inputlabel">Kilogrammes</span><strong data-kg-out>${format(weightKg)} kg</strong></div><div class="unit"><span class="inputlabel">Livres</span><strong data-lb-out>${format(pounds(weightKg))} lb</strong></div></div><div class="units"><label><span class="inputlabel">Entrer kg</span><input data-weight-kg type="number" step="0.1" inputmode="decimal" value="${weightKg}"></label><label><span class="inputlabel">Ou entrer lb</span><input data-weight-lb type="number" step="0.1" inputmode="decimal" placeholder="${format(pounds(weightKg))}"></label></div></div><div class="card"><div class="sectionhead" style="margin-top:0"><h3>Séries</h3><button class="textbutton" data-action="add-set">＋ Ajouter une série</button></div><div data-sets>${rows}</div></div><button class="button full" data-action="save-workout">✓ &nbsp; Enregistrer la séance</button>`;
+  const frames = [1, 2, 3].map((frame, index) => {
+    const image = exerciseArtwork(exercise, frame);
+    return image ? `<div class="exercise-frame"><img src="${image}" alt="${safe(exercise.name)} — étape ${index + 1}" loading="lazy"><span>${["Départ", "Mouvement", "Retour"][index]}</span></div>` : "";
+  }).join("");
+  const favoriteButton = `<button class="textbutton" data-favorite="${exercise.id}" aria-label="Favori">${data.favorites.includes(exercise.id) ? "⭐" : "☆"}</button>`;
+  const illustrationPanel = frames
+    ? `<div class="card exercise-demo"><div class="sectionhead" style="margin-top:0"><div><h3>${safe(exercise.name)}</h3><span class="muted">Les étapes du mouvement</span></div>${favoriteButton}</div><div class="exercise-frames">${frames}</div><a class="art-credit" href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noreferrer">Illustrations : Bryl Lim / Everkinetic · CC BY-SA 4.0</a></div>`
+    : `<div class="card row"><div class="thumb">${exerciseSilhouette(exercise)}</div><div class="grow"><h3>${safe(exercise.name)}</h3><span class="muted">${previous ? "Dernière séance · valeurs préremplies" : "Ajoute tes séries ci-dessous"}</span></div>${favoriteButton}</div>`;
+  return `${header(exercise.name, "Nouvelle séance")}${illustrationPanel}<div class="card"><div class="sectionhead" style="margin-top:0"><h3>Poids de la série</h3><span class="tag">KG + LB</span></div><div class="units"><div class="unit"><span class="inputlabel">Kilogrammes</span><strong data-kg-out>${format(weightKg)} kg</strong></div><div class="unit"><span class="inputlabel">Livres</span><strong data-lb-out>${format(pounds(weightKg))} lb</strong></div></div><div class="units"><label><span class="inputlabel">Entrer kg</span><input data-weight-kg type="number" step="0.1" inputmode="decimal" value="${weightKg}"></label><label><span class="inputlabel">Ou entrer lb</span><input data-weight-lb type="number" step="0.1" inputmode="decimal" placeholder="${format(pounds(weightKg))}"></label></div></div><div class="card"><div class="sectionhead" style="margin-top:0"><h3>Séries</h3><button class="textbutton" data-action="add-set">＋ Ajouter une série</button></div><div data-sets>${rows}</div></div><button class="button full" data-action="save-workout">✓ &nbsp; Enregistrer la séance</button>`;
 }
 function historyPage(): string {
   const sessions = [...data.sessions].reverse();

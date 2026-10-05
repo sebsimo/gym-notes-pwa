@@ -52,3 +52,7 @@ Pour récupérer tes données plus tard, ouvre **Historique → Restaurer depuis
 Le catalogue reprend les noms des exercices affichés par [Espace Musculation](https://www.espace-musculation.com/exercices). Leur classement par équipement dans l’application est indicatif.
 
 Le catalogue de GYM NOTES peut être parcouru par groupe musculaire ou par matériel.
+
+## Illustrations des exercices
+
+Les illustrations apparaissent dans la liste et en trois étapes sur la fiche des exercices pris en charge. Les autres exercices conservent leur silhouette. Les illustrations sont de Bryl Lim / Everkinetic sous licence CC BY-SA 4.0; voir `public/exercises/ATTRIBUTION.md` et `public/exercises/LICENSE-ASSETS`.
