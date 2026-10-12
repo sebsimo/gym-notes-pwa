@@ -1,16 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 280" fill="none">
-  <defs>
-    <linearGradient id="bell" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#78848a"/><stop offset=".34" stop-color="#435057"/><stop offset=".7" stop-color="#222b30"/><stop offset="1" stop-color="#5c686e"/></linearGradient>
-    <linearGradient id="handle" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#cfd6d6"/><stop offset=".45" stop-color="#5f6b71"/><stop offset="1" stop-color="#252e33"/></linearGradient>
-  </defs>
-  <ellipse cx="180" cy="241" rx="105" ry="16" fill="#dce1df"/>
-  <path d="M133 109c-2-21 4-55 25-67 13-8 31-8 44 0 21 12 27 46 25 67" stroke="url(#handle)" stroke-width="20" stroke-linecap="round"/>
-  <path d="M134 103c-1-20 5-43 20-53 8-5 18-8 28-8" stroke="#f0f3f2" stroke-width="5" stroke-linecap="round" opacity=".8"/>
-  <path d="M114 104c-22 17-37 48-38 82-1 31 8 48 22 56 24 14 140 14 164 0 14-8 23-25 22-56-1-34-16-65-38-82-20-15-112-15-132 0z" fill="url(#bell)" stroke="#20282d" stroke-width="5"/>
-  <path d="M116 123c-16 16-25 41-25 66" stroke="#c4cfd0" stroke-width="5" stroke-linecap="round" opacity=".65"/>
-  <path d="M108 191c1 19 6 31 16 38" stroke="#c5f36a" stroke-width="5" stroke-linecap="round"/>
-  <path d="M141 212c22 7 57 7 78 0" stroke="#879399" stroke-width="3" opacity=".8"/>
-  <path d="M173 126h14" stroke="#c5f36a" stroke-width="5" stroke-linecap="round"/>
-  <circle cx="180" cy="168" r="28" fill="#303b40" stroke="#78848a" stroke-width="3"/>
-  <text x="180" y="176" text-anchor="middle" font-family="Arial,sans-serif" font-size="25" font-weight="700" fill="#e8edeb">16</text>
+  <ellipse cx="180" cy="236" rx="100" ry="16" fill="#e8e8e8"/>
+  <path d="M139 101c-1-26 3-59 25-70 11-6 23-6 34 0 22 11 26 44 25 70" stroke="#414141" stroke-width="24" stroke-linecap="round"/>
+  <path d="M147 94c1-25 5-47 19-55 7-4 15-5 23-4" stroke="#eee" stroke-width="5" stroke-linecap="round"/>
+  <path d="M113 103c-24 17-39 48-40 84-1 30 8 48 23 57 24 14 144 14 168 0 15-9 24-27 23-57-1-36-16-67-40-84-20-14-114-14-134 0z" fill="#414141" stroke="#292929" stroke-width="5"/>
+  <path d="M112 121c-17 17-26 43-26 69" stroke="#eee" stroke-width="6" stroke-linecap="round"/>
+  <path d="M105 191c2 20 8 33 18 41" stroke="#bcbcbc" stroke-width="4" stroke-linecap="round"/>
+  <path d="M238 213c-22 8-93 8-116 0" stroke="#858585" stroke-width="3" stroke-linecap="round"/>
+  <path d="M166 132h28" stroke="#eee" stroke-width="5" stroke-linecap="round"/>
+  <circle cx="180" cy="172" r="29" fill="#f1f1f1"/>
+  <text x="180" y="180" text-anchor="middle" font-family="Arial,sans-serif" font-size="22" font-weight="700" fill="#3b3b3b">16</text>
 </svg>

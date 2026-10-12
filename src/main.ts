@@ -235,7 +235,7 @@ function categoryCard(category: Category, filterType: FilterType = "equipment"):
   const visual = illustration
     ? `<span class="category-art"><img src="${import.meta.env.BASE_URL}${illustrationDirectory}/${illustration}" alt="" loading="lazy"></span>`
     : `<span class="emoji">${category.icon}</span>`;
-  return `<button class="category${illustration ? " category-with-art" : ""}" data-filter-id="${safe(category.id)}" data-filter-type="${filterType}">${visual}<b>${safe(category.name)}</b><small>${safe(category.description)}</small></button>`;
+  return `<button class="category${illustration ? " category-with-art" : ""}${filterType === "equipment" ? " category-equipment" : ""}" data-filter-id="${safe(category.id)}" data-filter-type="${filterType}">${visual}<b>${safe(category.name)}</b><small>${safe(category.description)}</small></button>`;
 }
 function exerciseSilhouette(exercise: Exercise): string {
   const name = exercise.name.toLocaleLowerCase("fr-CA");

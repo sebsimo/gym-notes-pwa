@@ -1,4 +1,4 @@
-const CACHE_NAME = "gym-notes-pwa-v6";
+const CACHE_NAME = "gym-notes-pwa-v7";
 const APP_ROOT = new URL(self.registration.scope).pathname;
 const APP_SHELL = [
   APP_ROOT,
