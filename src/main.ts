@@ -43,12 +43,12 @@ const muscleIllustrations: Record<string, string> = {
   "Abdominaux & gainage": "abdominaux.svg",
 };
 const equipmentIllustrations: Record<string, string> = {
-  dumbbells: "dumbbells.svg",
-  barbell: "barbell.svg",
+  dumbbells: "dumbbells-hand.png",
+  barbell: "barbell-exact.png",
   machine: "machine.svg",
   bodyweight: "bodyweight.svg",
   cables: "cables.svg",
-  kettlebell: "kettlebell.svg",
+  kettlebell: "kettlebell-exact.png",
 };
 const exercises: Exercise[] = [
   ["Développé couché", "Poitrine", "barbell", "🛏️"], ["Presse à jambes", "Jambes", "machine", "🦵"],
