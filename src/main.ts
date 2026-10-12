@@ -337,6 +337,41 @@ function addCustomExercise(): void {
   data.customExercises.push({ id: `custom-${Date.now()}`, name, muscle, categoryId, icon: categories.find(item => item.id === categoryId)?.icon ?? "🏋️" });
   saveData(); showToast("Exercice ajouté"); render();
 }
+function openExerciseEditor(id: string): void {
+  const editor = view.querySelector<HTMLElement>("[data-exercise-editor]");
+  if (!editor || selectedExercise?.id !== id) return;
+  editor.hidden = false;
+  editor.querySelector<HTMLInputElement>('input[name="name"]')?.focus();
+}
+function saveEditedExercise(form: HTMLFormElement): void {
+  const id = form.dataset.exerciseId;
+  const current = allExercises().find(exercise => exercise.id === id);
+  const values = new FormData(form);
+  const name = String(values.get("name") ?? "").trim();
+  const muscle = String(values.get("muscle") ?? "");
+  const categoryId = String(values.get("categoryId") ?? "");
+  if (!id || !current || !name || !muscle || !categoryId) return;
+  const updated: Exercise = { ...current, name, muscle, categoryId, icon: categories.find(category => category.id === categoryId)?.icon ?? current.icon };
+  const customIndex = data.customExercises.findIndex(exercise => exercise.id === id);
+  if (customIndex >= 0) data.customExercises[customIndex] = updated;
+  else data.editedExercises = [...data.editedExercises.filter(exercise => exercise.id !== id), updated];
+  selectedExercise = updated;
+  selectedCategoryId = selectedFilterType === "muscle" ? muscle : categoryId;
+  selectedEquipmentId = "";
+  searchText = "";
+  saveData(); showToast("Exercice modifié ✓"); go("exercises");
+}
+function deleteExercise(id: string): void {
+  const exercise = allExercises().find(item => item.id === id);
+  if (!exercise || !window.confirm(`Supprimer « ${exercise.name} » de la liste ? Les séances déjà enregistrées resteront dans ton historique.`)) return;
+  const isCustom = data.customExercises.some(item => item.id === id);
+  if (isCustom) data.customExercises = data.customExercises.filter(item => item.id !== id);
+  else if (!data.deletedExerciseIds.includes(id)) data.deletedExerciseIds.push(id);
+  data.editedExercises = data.editedExercises.filter(item => item.id !== id);
+  data.favorites = data.favorites.filter(item => item !== id);
+  selectedExercise = undefined;
+  saveData(); showToast("Exercice supprimé"); go("exercises");
+}
 function addSet(): void {
   const holder = view.querySelector<HTMLElement>("[data-sets]");
   if (!holder) return;
