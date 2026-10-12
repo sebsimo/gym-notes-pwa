@@ -42,6 +42,14 @@ const muscleIllustrations: Record<string, string> = {
   "Mollets": "mollets.svg",
   "Abdominaux & gainage": "abdominaux.svg",
 };
+const equipmentIllustrations: Record<string, string> = {
+  dumbbells: "dumbbells.svg",
+  barbell: "barbell.svg",
+  machine: "machine.svg",
+  bodyweight: "bodyweight.svg",
+  cables: "cables.svg",
+  kettlebell: "kettlebell.svg",
+};
 const exercises: Exercise[] = [
   ["Développé couché", "Poitrine", "barbell", "🛏️"], ["Presse à jambes", "Jambes", "machine", "🦵"],
   ["Tirage vertical", "Dos", "cables", "↘️"], ["Curl biceps", "Bras", "dumbbells", "💪"],
@@ -222,9 +230,10 @@ function header(title: string, subtitle: string): string {
   return `<div class="screenhead"><button class="back" data-action="back" aria-label="Retour">←</button><div><h1>${safe(title)}</h1><p>${safe(subtitle)}</p></div></div>`;
 }
 function categoryCard(category: Category, filterType: FilterType = "equipment"): string {
-  const illustration = filterType === "muscle" ? muscleIllustrations[category.id] : undefined;
+  const illustration = filterType === "muscle" ? muscleIllustrations[category.id] : equipmentIllustrations[category.id];
+  const illustrationDirectory = filterType === "muscle" ? "muscles" : "equipment";
   const visual = illustration
-    ? `<span class="category-art"><img src="${import.meta.env.BASE_URL}muscles/${illustration}" alt="" loading="lazy"></span>`
+    ? `<span class="category-art"><img src="${import.meta.env.BASE_URL}${illustrationDirectory}/${illustration}" alt="" loading="lazy"></span>`
     : `<span class="emoji">${category.icon}</span>`;
   return `<button class="category${illustration ? " category-with-art" : ""}" data-filter-id="${safe(category.id)}" data-filter-type="${filterType}">${visual}<b>${safe(category.name)}</b><small>${safe(category.description)}</small></button>`;
 }

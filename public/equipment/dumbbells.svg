@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 280" fill="none">
+  <defs>
+    <linearGradient id="rubber" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#707a80"/><stop offset=".48" stop-color="#303a40"/><stop offset="1" stop-color="#171e22"/></linearGradient>
+    <linearGradient id="steel" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#f4f6f4"/><stop offset=".42" stop-color="#aeb8bb"/><stop offset="1" stop-color="#68757a"/></linearGradient>
+  </defs>
+  <ellipse cx="185" cy="245" rx="139" ry="17" fill="#dce1df"/>
+  <g transform="rotate(-18 180 135)">
+    <path d="M77 131h206" stroke="#303a40" stroke-width="23" stroke-linecap="round"/>
+    <path d="M112 131h136" stroke="url(#steel)" stroke-width="11" stroke-linecap="round"/>
+    <path d="M143 126v10m9-10v10m9-10v10m9-10v10m9-10v10m9-10v10m9-10v10m9-10v10" stroke="#66747a" stroke-width="2"/>
+    <path d="M57 92h26l11 11v56l-11 11H57l-11-11v-56z" fill="url(#rubber)" stroke="#252e33" stroke-width="4"/>
+    <path d="M87 100h20l10 10v42l-10 10H87z" fill="#48545a" stroke="#252e33" stroke-width="4"/>
+    <path d="M279 100h-20l-10 10v42l10 10h20z" fill="#48545a" stroke="#252e33" stroke-width="4"/>
+    <path d="M309 92h-26l-11 11v56l11 11h26l11-11v-56z" fill="url(#rubber)" stroke="#252e33" stroke-width="4"/>
+    <path d="M59 99h20M284 99h20" stroke="#9ba5a8" stroke-width="3" stroke-linecap="round" opacity=".8"/>
+    <path d="M51 145h34M285 145h34" stroke="#b6c0c2" stroke-width="2" opacity=".55"/>
+    <path d="M48 154v8m37-59v57m202-57v57m37-57v59" stroke="#c5f36a" stroke-width="4" opacity=".9"/>
+  </g>
+  <g transform="translate(12 40) rotate(21 150 170)" opacity=".92">
+    <path d="M77 204h153" stroke="#303a40" stroke-width="18" stroke-linecap="round"/>
+    <path d="M105 204h98" stroke="url(#steel)" stroke-width="8" stroke-linecap="round"/>
+    <path d="M51 180h21l9 9v30l-9 9H51l-9-9v-30zM80 185h17l8 7v20l-8 7H80z" fill="url(#rubber)" stroke="#252e33" stroke-width="3"/>
+    <path d="M256 185h-17l-8 7v20l8 7h17zM285 180h-21l-9 9v30l9 9h21l9-9v-30z" fill="url(#rubber)" stroke="#252e33" stroke-width="3"/>
+    <path d="M46 186h24m218 0h-24" stroke="#b6c0c2" stroke-width="2" opacity=".65"/>
+  </g>
+</svg>

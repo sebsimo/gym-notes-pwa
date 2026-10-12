@@ -1,4 +1,4 @@
-const CACHE_NAME = "gym-notes-pwa-v5";
+const CACHE_NAME = "gym-notes-pwa-v6";
 const APP_ROOT = new URL(self.registration.scope).pathname;
 const APP_SHELL = [
   APP_ROOT,
@@ -6,6 +6,7 @@ const APP_SHELL = [
   `${APP_ROOT}icons/icon.svg`,
   `${APP_ROOT}icons/maskable.svg`,
   ...["pectoraux.svg", "dos-trapezes.svg", "epaules.svg", "biceps.svg", "triceps.svg", "avant-bras.svg", "quadriceps.svg", "ischio-fessiers.svg", "mollets.svg", "abdominaux.svg"].map(file => `${APP_ROOT}muscles/${file}`),
+  ...["dumbbells.svg", "barbell.svg", "machine.svg", "bodyweight.svg", "cables.svg", "kettlebell.svg"].map(file => `${APP_ROOT}equipment/${file}`),
 ];
 
 self.addEventListener("install", event => {
