@@ -280,7 +280,8 @@ function exerciseList(): string {
 }
 function exerciseEditor(exercise: Exercise): string {
   const currentMuscle = muscleGroupFor(exercise);
-  const muscleOptions = muscleGroups.map(group => `<option value="${safe(group.id)}"${group.id === currentMuscle ? " selected" : ""}>${safe(group.name)}</option>`).join("");
+  const availableMuscles = muscleGroups.some(group => group.id === currentMuscle) ? muscleGroups : [...muscleGroups, { id: currentMuscle, name: currentMuscle, icon: "", description: "" }];
+  const muscleOptions = availableMuscles.map(group => `<option value="${safe(group.id)}"${group.id === currentMuscle ? " selected" : ""}>${safe(group.name)}</option>`).join("");
   const equipmentOptions = categories.map(category => `<option value="${safe(category.id)}"${category.id === exercise.categoryId ? " selected" : ""}>${safe(category.name)}</option>`).join("");
   return `<div class="exercise-editor-backdrop" data-exercise-editor hidden><form class="exercise-editor" data-editor-form data-exercise-id="${safe(exercise.id)}" role="dialog" aria-modal="true" aria-labelledby="exercise-editor-title"><h2 id="exercise-editor-title">Modifier l’exercice</h2><label>Nom<input name="name" type="text" maxlength="80" value="${safe(exercise.name)}" required></label><label>Partie du corps<select name="muscle">${muscleOptions}</select></label><label>Matériel<select name="categoryId">${equipmentOptions}</select></label><div class="exercise-editor-actions"><button class="button secondary" type="button" data-action="cancel-edit">Annuler</button><button class="button" type="submit">Enregistrer</button></div></form></div>`;
 }
@@ -302,7 +303,7 @@ function workoutPage(): string {
     ? `<div class="card exercise-demo"><div class="sectionhead" style="margin-top:0"><div><h3>${safe(exercise.name)}</h3><span class="muted">Les étapes du mouvement</span></div>${favoriteButton}</div><div class="exercise-frames">${frames}</div><a class="art-credit" href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noreferrer">Illustrations : Bryl Lim / Everkinetic · CC BY-SA 4.0</a></div>`
     : `<div class="card row"><div class="thumb">${exerciseSilhouette(exercise)}</div><div class="grow"><h3>${safe(exercise.name)}</h3><span class="muted">${previous ? "Dernière séance · valeurs préremplies" : "Ajoute tes séries ci-dessous"}</span></div>${favoriteButton}</div>`;
   const exerciseActions = `<div class="exercise-management"><button class="button secondary" data-action="edit-exercise" data-exercise="${safe(exercise.id)}">✎ &nbsp; Modifier</button><button class="button danger" data-action="delete-exercise" data-exercise="${safe(exercise.id)}">Supprimer</button></div>`;
-  return `${header(exercise.name, "Nouvelle séance")}${exerciseActions}${illustrationPanel}${exerciseEditor(exercise)}<div class="card"><div class="sectionhead" style="margin-top:0"><h3>Poids de la série</h3><span class="tag">KG + LB</span></div><div class="units"><div class="unit"><span class="inputlabel">Kilogrammes</span><strong data-kg-out>${format(weightKg)} kg</strong></div><div class="unit"><span class="inputlabel">Livres</span><strong data-lb-out>${format(pounds(weightKg))} lb</strong></div></div><div class="units"><label><span class="inputlabel">Entrer kg</span><input data-weight-kg type="number" step="0.1" inputmode="decimal" value="${weightKg}"></label><label><span class="inputlabel">Ou entrer lb</span><input data-weight-lb type="number" inputmode="decimal" placeholder="${format(pounds(weightKg))}"></label></div></div><div class="card"><div class="sectionhead" style="margin-top:0"><h3>Séries</h3><button class="textbutton" data-action="add-set">＋ Ajouter une série</button></div><div data-sets>${rows}</div></div><button class="button full" data-action="save-workout">✓ &nbsp; Enregistrer la séance</button>`;
+  return `${header(exercise.name, "Gère l’exercice ou note une séance")}${exerciseActions}${illustrationPanel}${exerciseEditor(exercise)}<div class="card"><div class="sectionhead" style="margin-top:0"><h3>Poids de la série</h3><span class="tag">KG + LB</span></div><div class="units"><div class="unit"><span class="inputlabel">Kilogrammes</span><strong data-kg-out>${format(weightKg)} kg</strong></div><div class="unit"><span class="inputlabel">Livres</span><strong data-lb-out>${format(pounds(weightKg))} lb</strong></div></div><div class="units"><label><span class="inputlabel">Entrer kg</span><input data-weight-kg type="number" step="0.1" inputmode="decimal" value="${weightKg}"></label><label><span class="inputlabel">Ou entrer lb</span><input data-weight-lb type="number" inputmode="decimal" placeholder="${format(pounds(weightKg))}"></label></div></div><div class="card"><div class="sectionhead" style="margin-top:0"><h3>Séries</h3><button class="textbutton" data-action="add-set">＋ Ajouter une série</button></div><div data-sets>${rows}</div></div><button class="button full" data-action="save-workout">✓ &nbsp; Enregistrer la séance</button>`;
 }
 function historyPage(): string {
   const sessions = [...data.sessions].reverse();
@@ -398,12 +399,16 @@ function isBackupDocument(value: unknown): value is BackupDocument {
   if (!Array.isArray(backupData.customExercises) || !backupData.sessions || !Array.isArray(backupData.sessions)) return false;
   const exercisesAreValid = backupData.customExercises.every((item: unknown) => isRecord(item)
     && ["id", "name", "muscle", "categoryId", "icon"].every(key => typeof item[key] === "string"));
+  const editedExercisesAreValid = backupData.editedExercises === undefined || (Array.isArray(backupData.editedExercises)
+    && backupData.editedExercises.every((item: unknown) => isStoredExercise(item)));
+  const deletedExerciseIdsAreValid = backupData.deletedExerciseIds === undefined || (Array.isArray(backupData.deletedExerciseIds)
+    && backupData.deletedExerciseIds.every((item: unknown) => typeof item === "string"));
   const sessionsAreValid = backupData.sessions.every((session: unknown) => isRecord(session)
     && typeof session.date === "string" && Array.isArray(session.items)
     && session.items.every((item: unknown) => isRecord(item) && typeof item.exerciseName === "string"
       && Array.isArray(item.sets) && item.sets.every((set: unknown) => isRecord(set)
         && typeof set.kg === "number" && Number.isFinite(set.kg) && typeof set.reps === "number" && Number.isFinite(set.reps))));
-  return exercisesAreValid && sessionsAreValid;
+  return exercisesAreValid && editedExercisesAreValid && deletedExerciseIdsAreValid && sessionsAreValid;
 }
 async function exportBackup(): Promise<void> {
   const backup: BackupDocument = { format: "gym-notes-backup", version: 1, exportedAt: new Date().toISOString(), data };
@@ -431,7 +436,7 @@ async function restoreBackup(file: File | undefined): Promise<void> {
     const parsed: unknown = JSON.parse(await file.text());
     if (!isBackupDocument(parsed)) throw new Error("invalid backup");
     if (!window.confirm("Restaurer cette sauvegarde remplacera les données actuelles de GYM NOTES sur cet appareil. Continuer ?")) return;
-    data = parsed.data;
+    data = { ...defaultData, ...parsed.data };
     saveData(); showToast("Sauvegarde restaurée ✓"); render();
   } catch {
     showToast("Ce fichier n’est pas une sauvegarde GYM NOTES valide");
@@ -441,6 +446,7 @@ async function restoreBackup(file: File | undefined): Promise<void> {
 view.addEventListener("click", event => {
   const target = event.target;
   if (!(target instanceof Element)) return;
+  if (target.matches("[data-exercise-editor]")) { (target as HTMLElement).hidden = true; return; }
   const action = target.closest<HTMLElement>("[data-action]")?.dataset.action;
   const filterId = target.closest<HTMLElement>("[data-filter-id]")?.dataset.filterId;
   const filterType = target.closest<HTMLElement>("[data-filter-id]")?.dataset.filterType as FilterType | undefined;
@@ -452,6 +458,9 @@ view.addEventListener("click", event => {
   if (action === "back") back();
   else if (action === "start") go("categories");
   else if (action === "add-exercise") addCustomExercise();
+  else if (action === "edit-exercise" && exerciseId) openExerciseEditor(exerciseId);
+  else if (action === "delete-exercise" && exerciseId) deleteExercise(exerciseId);
+  else if (action === "cancel-edit") { const editor = view.querySelector<HTMLElement>("[data-exercise-editor]"); if (editor) editor.hidden = true; }
   else if (action === "add-set") addSet();
   else if (action === "save-workout") saveWorkout();
   else if (action === "export-backup") void exportBackup();
@@ -462,6 +471,19 @@ view.addEventListener("click", event => {
   else if (filterId && filterType) { selectedCategoryId = filterId; selectedFilterType = filterType; selectedEquipmentId = ""; searchText = ""; go("exercises"); }
   else if (exerciseId) selectExercise(exerciseId);
   else if (nextPage) go(nextPage);
+});
+view.addEventListener("keydown", event => {
+  if (event.key === "Escape") {
+    const editor = view.querySelector<HTMLElement>("[data-exercise-editor]");
+    if (editor && !editor.hidden) editor.hidden = true;
+  }
+});
+view.addEventListener("submit", event => {
+  const target = event.target;
+  if (target instanceof HTMLFormElement && target.matches("[data-editor-form]")) {
+    event.preventDefault();
+    saveEditedExercise(target);
+  }
 });
 view.addEventListener("change", event => {
   const target = event.target;

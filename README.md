@@ -53,6 +53,8 @@ Le catalogue reprend les noms des exercices affichés par [Espace Musculation](h
 
 Le catalogue de GYM NOTES peut être parcouru par groupe musculaire ou par matériel.
 
+Depuis la fiche d’un exercice, tu peux modifier son nom, son groupe musculaire et son matériel, ou le supprimer de la liste. Les exercices du catalogue peuvent être personnalisés; les séances déjà enregistrées restent dans l’historique. Les changements sont enregistrés sur l’appareil et inclus dans les sauvegardes.
+
 ## Illustrations des exercices
 
 Les illustrations apparaissent dans la liste et en trois étapes sur la fiche des exercices pris en charge. Les autres exercices conservent leur silhouette. Les illustrations sont de Bryl Lim / Everkinetic sous licence CC BY-SA 4.0; voir `public/exercises/ATTRIBUTION.md` et `public/exercises/LICENSE-ASSETS`.
