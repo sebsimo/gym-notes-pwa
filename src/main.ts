@@ -5,7 +5,7 @@ type Exercise = { id: string; name: string; muscle: string; categoryId: string; 
 type SetEntry = { kg: number; reps: number };
 type WorkoutItem = { exerciseName: string; sets: SetEntry[] };
 type Session = { date: string; items: WorkoutItem[] };
-type AppData = { favorites: string[]; customExercises: Exercise[]; sessions: Session[] };
+type AppData = { favorites: string[]; customExercises: Exercise[]; editedExercises: Exercise[]; deletedExerciseIds: string[]; sessions: Session[] };
 type BackupDocument = { format: "gym-notes-backup"; version: 1; exportedAt: string; data: AppData };
 type Page = "home" | "categories" | "exercises" | "workout" | "history" | "favorites";
 type FilterType = "equipment" | "muscle";
@@ -120,11 +120,23 @@ const sourceExercises: Exercise[] = [
 ].map(([name, muscle, categoryId, icon], index) => ({ id: `catalog-${index}`, name: name!, muscle: muscle!, categoryId: categoryId!, icon: icon! }));
 
 const storageKey = "gym-notes-typescript";
-const defaultData: AppData = { favorites: [], customExercises: [], sessions: [] };
+const defaultData: AppData = { favorites: [], customExercises: [], editedExercises: [], deletedExerciseIds: [], sessions: [] };
+function isStoredExercise(value: unknown): value is Exercise {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
+    && ["id", "name", "muscle", "categoryId", "icon"].every(key => typeof (value as Record<string, unknown>)[key] === "string");
+}
 function loadData(): AppData {
   try {
     const saved: unknown = JSON.parse(localStorage.getItem(storageKey) ?? "null");
-    if (saved && typeof saved === "object") return { ...defaultData, ...(saved as Partial<AppData>) };
+    if (saved && typeof saved === "object") {
+      const stored = saved as Partial<AppData>;
+      return {
+        ...defaultData,
+        ...stored,
+        editedExercises: Array.isArray(stored.editedExercises) ? stored.editedExercises.filter(isStoredExercise) : [],
+        deletedExerciseIds: Array.isArray(stored.deletedExerciseIds) ? stored.deletedExerciseIds.filter(id => typeof id === "string") : [],
+      };
+    }
   } catch { /* On repart avec des données vides si le stockage est illisible. */ }
   return { ...defaultData };
 }
@@ -142,7 +154,11 @@ const toastElement = document.querySelector<HTMLElement>("#toast")!;
 const allExercises = (): Exercise[] => {
   const knownNames = new Set(exercises.map(exercise => exercise.name.toLocaleLowerCase("fr-CA")));
   const additions = sourceExercises.filter(exercise => !knownNames.has(exercise.name.toLocaleLowerCase("fr-CA")));
-  return [...exercises, ...additions, ...data.customExercises];
+  const overrides = new Map(data.editedExercises.map(exercise => [exercise.id, exercise]));
+  const baseExercises = [...exercises, ...additions]
+    .filter(exercise => !data.deletedExerciseIds.includes(exercise.id))
+    .map(exercise => overrides.get(exercise.id) ?? exercise);
+  return [...baseExercises, ...data.customExercises];
 };
 const exerciseIllustrationSlugs: Record<string, string> = {
   "developpe couche": "bench-press", "presse a jambes": "leg-press", "tirage vertical": "lat-pulldown",
@@ -262,6 +278,12 @@ function exerciseList(): string {
   const equipmentFilters = selectedFilterType === "muscle" ? `<div class="equipment-filters" aria-label="Filtrer par matériel"><button data-equipment-filter="" class="${selectedEquipmentId === "" ? "selected" : ""}">Tout</button>${categories.filter(item => ["dumbbells", "barbell", "machine", "bodyweight"].includes(item.id)).map(item => `<button data-equipment-filter="${item.id}" class="${selectedEquipmentId === item.id ? "selected" : ""}">${safe(item.name)}</button>`).join("")}</div>` : "";
   return `${header(filter?.name ?? "Exercices", selectedFilterType === "muscle" ? "Choisis le matériel, puis ton exercice" : "Exercices avec ce matériel")}<input class="search" data-search placeholder="⌕  Rechercher" value="${safe(searchText)}">${equipmentFilters}<div class="sectionhead"><h3>Exercices</h3><button class="textbutton" data-action="add-exercise">＋ Ajouter</button></div>${list.map(exerciseCard).join("") || `<div class="empty">Aucun exercice trouvé avec ce matériel.</div>`}`;
 }
+function exerciseEditor(exercise: Exercise): string {
+  const currentMuscle = muscleGroupFor(exercise);
+  const muscleOptions = muscleGroups.map(group => `<option value="${safe(group.id)}"${group.id === currentMuscle ? " selected" : ""}>${safe(group.name)}</option>`).join("");
+  const equipmentOptions = categories.map(category => `<option value="${safe(category.id)}"${category.id === exercise.categoryId ? " selected" : ""}>${safe(category.name)}</option>`).join("");
+  return `<div class="exercise-editor-backdrop" data-exercise-editor hidden><form class="exercise-editor" data-editor-form data-exercise-id="${safe(exercise.id)}" role="dialog" aria-modal="true" aria-labelledby="exercise-editor-title"><h2 id="exercise-editor-title">Modifier l’exercice</h2><label>Nom<input name="name" type="text" maxlength="80" value="${safe(exercise.name)}" required></label><label>Partie du corps<select name="muscle">${muscleOptions}</select></label><label>Matériel<select name="categoryId">${equipmentOptions}</select></label><div class="exercise-editor-actions"><button class="button secondary" type="button" data-action="cancel-edit">Annuler</button><button class="button" type="submit">Enregistrer</button></div></form></div>`;
+}
 function workoutPage(): string {
   const exercise = selectedExercise;
   if (!exercise) return "";
@@ -279,7 +301,8 @@ function workoutPage(): string {
   const illustrationPanel = frames
     ? `<div class="card exercise-demo"><div class="sectionhead" style="margin-top:0"><div><h3>${safe(exercise.name)}</h3><span class="muted">Les étapes du mouvement</span></div>${favoriteButton}</div><div class="exercise-frames">${frames}</div><a class="art-credit" href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noreferrer">Illustrations : Bryl Lim / Everkinetic · CC BY-SA 4.0</a></div>`
     : `<div class="card row"><div class="thumb">${exerciseSilhouette(exercise)}</div><div class="grow"><h3>${safe(exercise.name)}</h3><span class="muted">${previous ? "Dernière séance · valeurs préremplies" : "Ajoute tes séries ci-dessous"}</span></div>${favoriteButton}</div>`;
-  return `${header(exercise.name, "Nouvelle séance")}${illustrationPanel}<div class="card"><div class="sectionhead" style="margin-top:0"><h3>Poids de la série</h3><span class="tag">KG + LB</span></div><div class="units"><div class="unit"><span class="inputlabel">Kilogrammes</span><strong data-kg-out>${format(weightKg)} kg</strong></div><div class="unit"><span class="inputlabel">Livres</span><strong data-lb-out>${format(pounds(weightKg))} lb</strong></div></div><div class="units"><label><span class="inputlabel">Entrer kg</span><input data-weight-kg type="number" step="0.1" inputmode="decimal" value="${weightKg}"></label><label><span class="inputlabel">Ou entrer lb</span><input data-weight-lb type="number" step="0.1" inputmode="decimal" placeholder="${format(pounds(weightKg))}"></label></div></div><div class="card"><div class="sectionhead" style="margin-top:0"><h3>Séries</h3><button class="textbutton" data-action="add-set">＋ Ajouter une série</button></div><div data-sets>${rows}</div></div><button class="button full" data-action="save-workout">✓ &nbsp; Enregistrer la séance</button>`;
+  const exerciseActions = `<div class="exercise-management"><button class="button secondary" data-action="edit-exercise" data-exercise="${safe(exercise.id)}">✎ &nbsp; Modifier</button><button class="button danger" data-action="delete-exercise" data-exercise="${safe(exercise.id)}">Supprimer</button></div>`;
+  return `${header(exercise.name, "Nouvelle séance")}${exerciseActions}${illustrationPanel}${exerciseEditor(exercise)}<div class="card"><div class="sectionhead" style="margin-top:0"><h3>Poids de la série</h3><span class="tag">KG + LB</span></div><div class="units"><div class="unit"><span class="inputlabel">Kilogrammes</span><strong data-kg-out>${format(weightKg)} kg</strong></div><div class="unit"><span class="inputlabel">Livres</span><strong data-lb-out>${format(pounds(weightKg))} lb</strong></div></div><div class="units"><label><span class="inputlabel">Entrer kg</span><input data-weight-kg type="number" step="0.1" inputmode="decimal" value="${weightKg}"></label><label><span class="inputlabel">Ou entrer lb</span><input data-weight-lb type="number" inputmode="decimal" placeholder="${format(pounds(weightKg))}"></label></div></div><div class="card"><div class="sectionhead" style="margin-top:0"><h3>Séries</h3><button class="textbutton" data-action="add-set">＋ Ajouter une série</button></div><div data-sets>${rows}</div></div><button class="button full" data-action="save-workout">✓ &nbsp; Enregistrer la séance</button>`;
 }
 function historyPage(): string {
   const sessions = [...data.sessions].reverse();
