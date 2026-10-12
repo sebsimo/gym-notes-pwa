@@ -387,7 +387,7 @@ function saveWorkout(): void {
   let session = data.sessions.at(-1);
   if (!session || session.date !== date) { session = { date, items: [] }; data.sessions.push(session); }
   session.items.push({ exerciseName: selectedExercise.name, sets });
-  saveData(); showToast("Séance enregistrée ✓"); window.setTimeout(() => go("home"), 500);
+  saveData(); showToast("Séance enregistrée ✓");
 }
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
