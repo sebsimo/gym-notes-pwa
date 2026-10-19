@@ -46,7 +46,7 @@ const equipmentIllustrations: Record<string, string> = {
   dumbbells: "dumbbells-hand.png",
   barbell: "barbell-exact.png",
   machine: "machine.svg",
-  bodyweight: "bodyweight.svg",
+  bodyweight: "bodyweight.png",
   cables: "cables.svg",
   kettlebell: "kettlebell-exact.png",
 };
