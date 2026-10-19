@@ -5,7 +5,7 @@ type Exercise = { id: string; name: string; muscle: string; categoryId: string; 
 type SetEntry = { kg: number; reps: number };
 type WorkoutItem = { exerciseName: string; sets: SetEntry[] };
 type Session = { date: string; items: WorkoutItem[] };
-type AppData = { favorites: string[]; customExercises: Exercise[]; editedExercises: Exercise[]; deletedExerciseIds: string[]; sessions: Session[] };
+type AppData = { favorites: string[]; customExercises: Exercise[]; editedExercises: Exercise[]; deletedExerciseIds: string[]; exerciseNotes: Record<string, string>; sessions: Session[] };
 type BackupDocument = { format: "gym-notes-backup"; version: 1; exportedAt: string; data: AppData };
 type Page = "home" | "categories" | "exercises" | "workout" | "history" | "favorites";
 type FilterType = "equipment" | "muscle";
@@ -128,7 +128,7 @@ const sourceExercises: Exercise[] = [
 ].map(([name, muscle, categoryId, icon], index) => ({ id: `catalog-${index}`, name: name!, muscle: muscle!, categoryId: categoryId!, icon: icon! }));
 
 const storageKey = "gym-notes-typescript";
-const defaultData: AppData = { favorites: [], customExercises: [], editedExercises: [], deletedExerciseIds: [], sessions: [] };
+const defaultData: AppData = { favorites: [], customExercises: [], editedExercises: [], deletedExerciseIds: [], exerciseNotes: {}, sessions: [] };
 function isStoredExercise(value: unknown): value is Exercise {
   return typeof value === "object" && value !== null && !Array.isArray(value)
     && ["id", "name", "muscle", "categoryId", "icon"].every(key => typeof (value as Record<string, unknown>)[key] === "string");
@@ -143,6 +143,9 @@ function loadData(): AppData {
         ...stored,
         editedExercises: Array.isArray(stored.editedExercises) ? stored.editedExercises.filter(isStoredExercise) : [],
         deletedExerciseIds: Array.isArray(stored.deletedExerciseIds) ? stored.deletedExerciseIds.filter(id => typeof id === "string") : [],
+        exerciseNotes: isRecord(stored.exerciseNotes)
+          ? Object.fromEntries(Object.entries(stored.exerciseNotes).filter((entry): entry is [string, string] => typeof entry[1] === "string"))
+          : {},
       };
     }
   } catch { /* On repart avec des données vides si le stockage est illisible. */ }
@@ -155,6 +158,7 @@ let selectedFilterType: FilterType = "muscle";
 let categoryMode: FilterType = "muscle";
 let selectedEquipmentId = "";
 let selectedExercise: Exercise | undefined;
+let workoutTab: "session" | "notes" = "session";
 let searchText = "";
 let weightKg = 20;
 const view = document.querySelector<HTMLElement>("#view")!;
@@ -312,7 +316,11 @@ function workoutPage(): string {
     ? `<div class="card exercise-demo"><div class="sectionhead" style="margin-top:0"><div><h3>${safe(exercise.name)}</h3><span class="muted">Les étapes du mouvement</span></div>${favoriteButton}</div><div class="exercise-frames">${frames}</div><a class="art-credit" href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noreferrer">Illustrations : Bryl Lim / Everkinetic · CC BY-SA 4.0</a></div>`
     : `<div class="card row"><div class="thumb">${exerciseSilhouette(exercise)}</div><div class="grow"><h3>${safe(exercise.name)}</h3><span class="muted">${previous ? "Dernière séance · valeurs préremplies" : "Ajoute tes séries ci-dessous"}</span></div>${favoriteButton}</div>`;
   const exerciseActions = `<div class="exercise-management"><button class="button secondary" data-action="edit-exercise" data-exercise="${safe(exercise.id)}">✎ &nbsp; Modifier</button><button class="button danger" data-action="delete-exercise" data-exercise="${safe(exercise.id)}">Supprimer</button></div>`;
-  return `${header(exercise.name, "Gère l’exercice ou note une séance")}${exerciseActions}${illustrationPanel}${exerciseEditor(exercise)}<div class="card"><div class="sectionhead" style="margin-top:0"><h3>Poids de la série</h3><span class="tag">KG + LB</span></div><div class="units"><div class="unit"><span class="inputlabel">Kilogrammes</span><strong data-kg-out>${format(weightKg)} kg</strong></div><div class="unit"><span class="inputlabel">Livres</span><strong data-lb-out>${format(pounds(weightKg))} lb</strong></div></div><div class="units"><label><span class="inputlabel">Entrer kg</span><input data-weight-kg type="number" step="0.1" inputmode="decimal" value="${weightKg}"></label><label><span class="inputlabel">Ou entrer lb</span><input data-weight-lb type="number" inputmode="decimal" placeholder="${format(pounds(weightKg))}"></label></div></div><div class="card"><div class="sectionhead" style="margin-top:0"><h3>Séries</h3><button class="textbutton" data-action="add-set">＋ Ajouter une série</button></div><div data-sets>${rows}</div></div><button class="button full" data-action="save-workout">✓ &nbsp; Enregistrer la séance</button>`;
+  const note = data.exerciseNotes[exercise.id] ?? "";
+  const tabs = `<div class="filter-switch workout-switch" role="tablist" aria-label="Informations sur l’exercice"><button role="tab" aria-selected="${workoutTab === "session"}" data-workout-tab="session" class="${workoutTab === "session" ? "selected" : ""}">Séance</button><button role="tab" aria-selected="${workoutTab === "notes"}" data-workout-tab="notes" class="${workoutTab === "notes" ? "selected" : ""}">Notes</button></div>`;
+  const sessionContent = `<div class="card"><div class="sectionhead" style="margin-top:0"><h3>Poids de la série</h3><span class="tag">KG + LB</span></div><div class="units"><div class="unit"><span class="inputlabel">Kilogrammes</span><strong data-kg-out>${format(weightKg)} kg</strong></div><div class="unit"><span class="inputlabel">Livres</span><strong data-lb-out>${format(pounds(weightKg))} lb</strong></div></div><div class="units"><label><span class="inputlabel">Entrer kg</span><input data-weight-kg type="number" step="0.1" inputmode="decimal" value="${weightKg}"></label><label><span class="inputlabel">Ou entrer lb</span><input data-weight-lb type="number" inputmode="decimal" placeholder="${format(pounds(weightKg))}"></label></div></div><div class="card"><div class="sectionhead" style="margin-top:0"><h3>Séries</h3><button class="textbutton" data-action="add-set">＋ Ajouter une série</button></div><div data-sets>${rows}</div></div><button class="button full" data-action="save-workout">✓ &nbsp; Enregistrer la séance</button>`;
+  const notesContent = `<section class="card exercise-notes"><label for="exercise-note"><h3>Notes sur ${safe(exercise.name)}</h3><span class="muted">Technique, réglage de la machine, sensations ou progression.</span></label><textarea id="exercise-note" data-exercise-note maxlength="2000" placeholder="Écris tes notes pour cet exercice…">${safe(note)}</textarea><div class="notes-footer"><span class="muted" data-note-status aria-live="polite">${note ? "Enregistré sur cet appareil" : "Enregistrement automatique sur cet appareil"}</span><span class="muted"><span data-note-count>${note.length}</span>/2000</span></div></section>`;
+  return `${header(exercise.name, "Gère l’exercice ou note une séance")}${exerciseActions}${illustrationPanel}${exerciseEditor(exercise)}${tabs}${workoutTab === "notes" ? notesContent : sessionContent}`;
 }
 function historyPage(): string {
   const sessions = [...data.sessions].reverse();
@@ -336,7 +344,7 @@ function toggleFavorite(id: string): void {
 }
 function selectExercise(id: string): void {
   selectedExercise = allExercises().find(item => item.id === id);
-  if (selectedExercise) { weightKg = data.sessions.flatMap(session => session.items).filter(item => item.exerciseName === selectedExercise?.name).at(-1)?.sets[0]?.kg ?? 20; go("workout"); }
+  if (selectedExercise) { workoutTab = "session"; weightKg = data.sessions.flatMap(session => session.items).filter(item => item.exerciseName === selectedExercise?.name).at(-1)?.sets[0]?.kg ?? 20; go("workout"); }
 }
 function addCustomExercise(): void {
   const name = window.prompt("Nom de l’exercice :")?.trim();
@@ -379,6 +387,7 @@ function deleteExercise(id: string): void {
   else if (!data.deletedExerciseIds.includes(id)) data.deletedExerciseIds.push(id);
   data.editedExercises = data.editedExercises.filter(item => item.id !== id);
   data.favorites = data.favorites.filter(item => item !== id);
+  delete data.exerciseNotes[id];
   selectedExercise = undefined;
   saveData(); showToast("Exercice supprimé"); go("exercises");
 }
@@ -412,12 +421,14 @@ function isBackupDocument(value: unknown): value is BackupDocument {
     && backupData.editedExercises.every((item: unknown) => isStoredExercise(item)));
   const deletedExerciseIdsAreValid = backupData.deletedExerciseIds === undefined || (Array.isArray(backupData.deletedExerciseIds)
     && backupData.deletedExerciseIds.every((item: unknown) => typeof item === "string"));
+  const exerciseNotesAreValid = backupData.exerciseNotes === undefined || (isRecord(backupData.exerciseNotes)
+    && Object.values(backupData.exerciseNotes).every(note => typeof note === "string"));
   const sessionsAreValid = backupData.sessions.every((session: unknown) => isRecord(session)
     && typeof session.date === "string" && Array.isArray(session.items)
     && session.items.every((item: unknown) => isRecord(item) && typeof item.exerciseName === "string"
       && Array.isArray(item.sets) && item.sets.every((set: unknown) => isRecord(set)
         && typeof set.kg === "number" && Number.isFinite(set.kg) && typeof set.reps === "number" && Number.isFinite(set.reps))));
-  return exercisesAreValid && editedExercisesAreValid && deletedExerciseIdsAreValid && sessionsAreValid;
+  return exercisesAreValid && editedExercisesAreValid && deletedExerciseIdsAreValid && exerciseNotesAreValid && sessionsAreValid;
 }
 async function exportBackup(): Promise<void> {
   const backup: BackupDocument = { format: "gym-notes-backup", version: 1, exportedAt: new Date().toISOString(), data };
@@ -463,6 +474,7 @@ view.addEventListener("click", event => {
   const exerciseId = target.closest<HTMLElement>("[data-exercise]")?.dataset.exercise;
   const favoriteId = target.closest<HTMLElement>("[data-favorite]")?.dataset.favorite;
   const equipmentFilter = target.closest<HTMLElement>("[data-equipment-filter]")?.dataset.equipmentFilter;
+  const workoutTabButton = target.closest<HTMLElement>("[data-workout-tab]")?.dataset.workoutTab as "session" | "notes" | undefined;
   const nextPage = target.closest<HTMLElement>("[data-page]")?.dataset.page as Page | undefined;
   if (action === "back") back();
   else if (action === "start") go("categories");
@@ -472,6 +484,7 @@ view.addEventListener("click", event => {
   else if (action === "cancel-edit") { const editor = view.querySelector<HTMLElement>("[data-exercise-editor]"); if (editor) editor.hidden = true; }
   else if (action === "add-set") addSet();
   else if (action === "save-workout") saveWorkout();
+  else if (workoutTabButton && (workoutTabButton === "session" || workoutTabButton === "notes")) { workoutTab = workoutTabButton; render(); }
   else if (action === "export-backup") void exportBackup();
   else if (action === "choose-backup") view.querySelector<HTMLInputElement>("[data-backup-file]")?.click();
   else if (filterMode) { categoryMode = filterMode; searchText = ""; render(); }
@@ -504,6 +517,17 @@ view.addEventListener("change", event => {
 document.querySelectorAll<HTMLButtonElement>(".tabs button").forEach(button => button.addEventListener("click", () => go((button.dataset.page ?? "home") as Page)));
 view.addEventListener("input", event => {
   const target = event.target;
+  if (target instanceof HTMLTextAreaElement && target.matches("[data-exercise-note]") && selectedExercise) {
+    const note = target.value;
+    if (note) data.exerciseNotes[selectedExercise.id] = note;
+    else delete data.exerciseNotes[selectedExercise.id];
+    saveData();
+    const status = view.querySelector<HTMLElement>("[data-note-status]");
+    if (status) status.textContent = "Enregistré sur cet appareil";
+    const count = view.querySelector<HTMLElement>("[data-note-count]");
+    if (count) count.textContent = String(note.length);
+    return;
+  }
   if (!(target instanceof HTMLInputElement)) return;
   if (target.matches("[data-search]")) {
     searchText = target.value;
