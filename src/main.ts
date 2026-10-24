@@ -5,7 +5,7 @@ type Exercise = { id: string; name: string; muscle: string; categoryId: string; 
 type SetEntry = { kg: number; reps: number };
 type WorkoutItem = { exerciseName: string; sets: SetEntry[] };
 type Session = { date: string; items: WorkoutItem[] };
-type AppData = { favorites: string[]; customExercises: Exercise[]; editedExercises: Exercise[]; deletedExerciseIds: string[]; exerciseNotes: Record<string, string>; sessions: Session[] };
+type AppData = { favorites: string[]; customExercises: Exercise[]; editedExercises: Exercise[]; deletedExerciseIds: string[]; exerciseNotes: Record<string, string>; exercisePhotos: Record<string, string>; sessions: Session[] };
 type BackupDocument = { format: "gym-notes-backup"; version: 1; exportedAt: string; data: AppData };
 type Page = "home" | "categories" | "exercises" | "workout" | "history" | "favorites";
 type FilterType = "equipment" | "muscle";
@@ -128,7 +128,7 @@ const sourceExercises: Exercise[] = [
 ].map(([name, muscle, categoryId, icon], index) => ({ id: `catalog-${index}`, name: name!, muscle: muscle!, categoryId: categoryId!, icon: icon! }));
 
 const storageKey = "gym-notes-typescript";
-const defaultData: AppData = { favorites: [], customExercises: [], editedExercises: [], deletedExerciseIds: [], exerciseNotes: {}, sessions: [] };
+const defaultData: AppData = { favorites: [], customExercises: [], editedExercises: [], deletedExerciseIds: [], exerciseNotes: {}, exercisePhotos: {}, sessions: [] };
 function isStoredExercise(value: unknown): value is Exercise {
   return typeof value === "object" && value !== null && !Array.isArray(value)
     && ["id", "name", "muscle", "categoryId", "icon"].every(key => typeof (value as Record<string, unknown>)[key] === "string");
@@ -145,6 +145,9 @@ function loadData(): AppData {
         deletedExerciseIds: Array.isArray(stored.deletedExerciseIds) ? stored.deletedExerciseIds.filter(id => typeof id === "string") : [],
         exerciseNotes: isRecord(stored.exerciseNotes)
           ? Object.fromEntries(Object.entries(stored.exerciseNotes).filter((entry): entry is [string, string] => typeof entry[1] === "string"))
+          : {},
+        exercisePhotos: isRecord(stored.exercisePhotos)
+          ? Object.fromEntries(Object.entries(stored.exercisePhotos).filter((entry): entry is [string, string] => typeof entry[1] === "string" && entry[1].startsWith("data:image/jpeg;base64,")))
           : {},
       };
     }
@@ -205,6 +208,8 @@ function exerciseArtwork(exercise: Exercise, frame: number): string | undefined 
   return slug ? `${import.meta.env.BASE_URL}exercises/${slug}/frame-${frame}.png` : undefined;
 }
 function exerciseThumbnail(exercise: Exercise): string {
+  const photo = data.exercisePhotos[exercise.id];
+  if (photo) return `<img class="exercise-thumb" src="${safe(photo)}" alt="Photo de ${safe(exercise.name)}" loading="lazy">`;
   const image = exerciseArtwork(exercise, 1);
   return image ? `<img class="exercise-thumb" src="${image}" alt="Illustration de ${safe(exercise.name)}" loading="lazy">` : exerciseSilhouette(exercise);
 }
@@ -307,15 +312,18 @@ function workoutPage(): string {
     const set = previous?.sets[index];
     return `<div class="setrow"><span class="setnum">${index + 1}</span><input data-set-kg type="number" step="0.1" inputmode="decimal" value="${set?.kg ?? weightKg}" aria-label="Poids en kg"><input data-set-reps type="number" inputmode="numeric" value="${set?.reps ?? 10}" aria-label="Répétitions"></div>`;
   }).join("");
-  const frames = [1, 2, 3].map((frame, index) => {
+  const photo = data.exercisePhotos[exercise.id];
+  const frames = photo ? "" : [1, 2, 3].map((frame, index) => {
     const image = exerciseArtwork(exercise, frame);
     return image ? `<div class="exercise-frame"><img src="${image}" alt="${safe(exercise.name)} — étape ${index + 1}" loading="lazy"><span>${["Départ", "Mouvement", "Retour"][index]}</span></div>` : "";
   }).join("");
   const favoriteButton = `<button class="textbutton" data-favorite="${exercise.id}" aria-label="Favori">${data.favorites.includes(exercise.id) ? "⭐" : "☆"}</button>`;
-  const illustrationPanel = frames
+  const illustrationPanel = photo
+    ? `<div class="card exercise-demo"><div class="sectionhead" style="margin-top:0"><div><h3>Ma photo</h3><span class="muted">Enregistrée sur cet appareil</span></div>${favoriteButton}</div><div class="exercise-user-photo"><img src="${safe(photo)}" alt="Photo de ${safe(exercise.name)}"></div></div>`
+    : frames
     ? `<div class="card exercise-demo"><div class="sectionhead" style="margin-top:0"><div><h3>${safe(exercise.name)}</h3><span class="muted">Les étapes du mouvement</span></div>${favoriteButton}</div><div class="exercise-frames">${frames}</div><a class="art-credit" href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noreferrer">Illustrations : Bryl Lim / Everkinetic · CC BY-SA 4.0</a></div>`
     : `<div class="card row"><div class="thumb">${exerciseSilhouette(exercise)}</div><div class="grow"><h3>${safe(exercise.name)}</h3><span class="muted">${previous ? "Dernière séance · valeurs préremplies" : "Ajoute tes séries ci-dessous"}</span></div>${favoriteButton}</div>`;
-  const exerciseActions = `<div class="exercise-management"><button class="button secondary" data-action="edit-exercise" data-exercise="${safe(exercise.id)}">✎ &nbsp; Modifier</button><button class="button danger" data-action="delete-exercise" data-exercise="${safe(exercise.id)}">Supprimer</button></div>`;
+  const exerciseActions = `<div class="exercise-management"><button class="button secondary" data-action="edit-exercise" data-exercise="${safe(exercise.id)}">✎ &nbsp; Modifier</button><button class="button secondary" data-action="choose-exercise-photo">📷 &nbsp; ${photo ? "Changer la photo" : "Prendre une photo"}</button>${photo ? `<button class="button secondary" data-action="remove-exercise-photo">Retirer la photo</button>` : ""}<button class="button danger" data-action="delete-exercise" data-exercise="${safe(exercise.id)}">Supprimer l’exercice</button></div><input data-exercise-photo-file class="file-picker" type="file" accept="image/*" capture="environment" aria-label="Prendre ou choisir une photo de l’exercice">`;
   const note = data.exerciseNotes[exercise.id] ?? "";
   const tabs = `<div class="filter-switch workout-switch" role="tablist" aria-label="Informations sur l’exercice"><button role="tab" aria-selected="${workoutTab === "session"}" data-workout-tab="session" class="${workoutTab === "session" ? "selected" : ""}">Séance</button><button role="tab" aria-selected="${workoutTab === "notes"}" data-workout-tab="notes" class="${workoutTab === "notes" ? "selected" : ""}">Notes</button></div>`;
   const sessionContent = `<div class="card"><div class="sectionhead" style="margin-top:0"><h3>Poids de la série</h3><span class="tag">KG + LB</span></div><div class="units"><div class="unit"><span class="inputlabel">Kilogrammes</span><strong data-kg-out>${format(weightKg)} kg</strong></div><div class="unit"><span class="inputlabel">Livres</span><strong data-lb-out>${format(pounds(weightKg))} lb</strong></div></div><div class="units"><label><span class="inputlabel">Entrer kg</span><input data-weight-kg type="number" step="0.1" inputmode="decimal" value="${weightKg}"></label><label><span class="inputlabel">Ou entrer lb</span><input data-weight-lb type="number" inputmode="decimal" placeholder="${format(pounds(weightKg))}"></label></div></div><div class="card"><div class="sectionhead" style="margin-top:0"><h3>Séries</h3><button class="textbutton" data-action="add-set">＋ Ajouter une série</button></div><div data-sets>${rows}</div></div><button class="button full" data-action="save-workout">✓ &nbsp; Enregistrer la séance</button>`;
@@ -388,8 +396,64 @@ function deleteExercise(id: string): void {
   data.editedExercises = data.editedExercises.filter(item => item.id !== id);
   data.favorites = data.favorites.filter(item => item !== id);
   delete data.exerciseNotes[id];
+  delete data.exercisePhotos[id];
   selectedExercise = undefined;
   saveData(); showToast("Exercice supprimé"); go("exercises");
+}
+function compressExercisePhoto(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const image = new Image();
+    const cleanup = (): void => URL.revokeObjectURL(url);
+    image.onload = () => {
+      try {
+        const scale = Math.min(1, 720 / Math.max(image.naturalWidth, image.naturalHeight));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+        canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+        const context = canvas.getContext("2d");
+        if (!context) throw new Error("Canvas indisponible");
+        context.fillStyle = "#ffffff";
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL("image/jpeg", 0.78));
+      } catch (error) {
+        reject(error);
+      } finally {
+        cleanup();
+      }
+    };
+    image.onerror = () => { cleanup(); reject(new Error("Photo illisible")); };
+    image.src = url;
+  });
+}
+async function saveExercisePhoto(file: File | undefined): Promise<void> {
+  if (!file || !selectedExercise) return;
+  const id = selectedExercise.id;
+  try {
+    const photo = await compressExercisePhoto(file);
+    const previous = data.exercisePhotos[id];
+    data.exercisePhotos[id] = photo;
+    try {
+      saveData();
+    } catch {
+      if (previous) data.exercisePhotos[id] = previous;
+      else delete data.exercisePhotos[id];
+      showToast("Espace de stockage insuffisant pour cette photo");
+      return;
+    }
+    showToast("Photo enregistrée sur cet appareil ✓");
+    render();
+  } catch {
+    showToast("Impossible de lire cette photo");
+  }
+}
+function removeExercisePhoto(): void {
+  if (!selectedExercise || !data.exercisePhotos[selectedExercise.id]) return;
+  delete data.exercisePhotos[selectedExercise.id];
+  saveData();
+  showToast("Photo retirée");
+  render();
 }
 function addSet(): void {
   const holder = view.querySelector<HTMLElement>("[data-sets]");
@@ -423,12 +487,14 @@ function isBackupDocument(value: unknown): value is BackupDocument {
     && backupData.deletedExerciseIds.every((item: unknown) => typeof item === "string"));
   const exerciseNotesAreValid = backupData.exerciseNotes === undefined || (isRecord(backupData.exerciseNotes)
     && Object.values(backupData.exerciseNotes).every(note => typeof note === "string"));
+  const exercisePhotosAreValid = backupData.exercisePhotos === undefined || (isRecord(backupData.exercisePhotos)
+    && Object.values(backupData.exercisePhotos).every(photo => typeof photo === "string" && photo.startsWith("data:image/jpeg;base64,")));
   const sessionsAreValid = backupData.sessions.every((session: unknown) => isRecord(session)
     && typeof session.date === "string" && Array.isArray(session.items)
     && session.items.every((item: unknown) => isRecord(item) && typeof item.exerciseName === "string"
       && Array.isArray(item.sets) && item.sets.every((set: unknown) => isRecord(set)
         && typeof set.kg === "number" && Number.isFinite(set.kg) && typeof set.reps === "number" && Number.isFinite(set.reps))));
-  return exercisesAreValid && editedExercisesAreValid && deletedExerciseIdsAreValid && exerciseNotesAreValid && sessionsAreValid;
+  return exercisesAreValid && editedExercisesAreValid && deletedExerciseIdsAreValid && exerciseNotesAreValid && exercisePhotosAreValid && sessionsAreValid;
 }
 async function exportBackup(): Promise<void> {
   const backup: BackupDocument = { format: "gym-notes-backup", version: 1, exportedAt: new Date().toISOString(), data };
@@ -481,6 +547,8 @@ view.addEventListener("click", event => {
   else if (action === "add-exercise") addCustomExercise();
   else if (action === "edit-exercise" && exerciseId) openExerciseEditor(exerciseId);
   else if (action === "delete-exercise" && exerciseId) deleteExercise(exerciseId);
+  else if (action === "choose-exercise-photo") view.querySelector<HTMLInputElement>("[data-exercise-photo-file]")?.click();
+  else if (action === "remove-exercise-photo") removeExercisePhoto();
   else if (action === "cancel-edit") { const editor = view.querySelector<HTMLElement>("[data-exercise-editor]"); if (editor) editor.hidden = true; }
   else if (action === "add-set") addSet();
   else if (action === "save-workout") saveWorkout();
@@ -511,6 +579,9 @@ view.addEventListener("change", event => {
   const target = event.target;
   if (target instanceof HTMLInputElement && target.matches("[data-backup-file]")) {
     void restoreBackup(target.files?.[0]);
+    target.value = "";
+  } else if (target instanceof HTMLInputElement && target.matches("[data-exercise-photo-file]")) {
+    void saveExercisePhoto(target.files?.[0]);
     target.value = "";
   }
 });
